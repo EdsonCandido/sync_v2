@@ -1,0 +1,3 @@
+{
+  "extends": "@sync_v2/config/tsconfig.base.json"
+}
