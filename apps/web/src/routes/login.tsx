@@ -1,14 +1,17 @@
-import { useState } from "react";
-
 import SignInForm from "@/components/sign-in-form";
-import SignUpForm from "@/components/sign-up-form";
+
+import type { Route } from "./+types/login";
+
+export function meta(_args: Route.MetaArgs) {
+	return [
+		{ title: "Entrar — Sync" },
+		{
+			name: "description",
+			content: "Acesse sua conta Sync com e-mail e senha.",
+		},
+	];
+}
 
 export default function Login() {
-  const [showSignIn, setShowSignIn] = useState(false);
-
-  return showSignIn ? (
-    <SignInForm onSwitchToSignUp={() => setShowSignIn(false)} />
-  ) : (
-    <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
-  );
+	return <SignInForm />;
 }

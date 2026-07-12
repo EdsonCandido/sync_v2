@@ -1,131 +1,216 @@
-import { Button } from "@sync_v2/ui/components/button";
-import { Input } from "@sync_v2/ui/components/input";
-import { Label } from "@sync_v2/ui/components/label";
+import {
+	Button,
+	Checkbox,
+	Container,
+	Field,
+	Heading,
+	HStack,
+	IconButton,
+	Input,
+	InputGroup,
+	Stack,
+	Text,
+} from "@chakra-ui/react";
 import { useForm } from "@tanstack/react-form";
-import { useNavigate } from "react-router";
-import { toast } from "sonner";
+import { useState } from "react";
+import { LuEye, LuEyeOff } from "react-icons/lu";
+import { Link, useNavigate } from "react-router";
 import z from "zod";
 
+import { toaster } from "@/components/ui/toaster";
 import { authClient } from "@/lib/auth-client";
 
 import Loader from "./loader";
 
-export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () => void }) {
-  const navigate = useNavigate();
-  const { isPending } = authClient.useSession();
+export default function SignInForm() {
+	const navigate = useNavigate();
+	const { isPending } = authClient.useSession();
+	const [showPassword, setShowPassword] = useState(false);
 
-  const form = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-    onSubmit: async ({ value }) => {
-      await authClient.signIn.email(
-        {
-          email: value.email,
-          password: value.password,
-        },
-        {
-          onSuccess: () => {
-            navigate("/dashboard");
-            toast.success("Sign in successful");
-          },
-          onError: (error) => {
-            toast.error(error.error.message || error.error.statusText);
-          },
-        },
-      );
-    },
-    validators: {
-      onSubmit: z.object({
-        email: z.email("Invalid email address"),
-        password: z.string().min(8, "Password must be at least 8 characters"),
-      }),
-    },
-  });
+	const form = useForm({
+		defaultValues: {
+			email: "",
+			password: "",
+			rememberMe: true,
+		},
+		onSubmit: async ({ value }) => {
+			await authClient.signIn.email(
+				{
+					email: value.email,
+					password: value.password,
+					rememberMe: value.rememberMe,
+				},
+				{
+					onSuccess: () => {
+						navigate("/dashboard");
+						toaster.create({
+							title: "Login realizado com sucesso",
+							type: "success",
+						});
+					},
+					onError: (error) => {
+						toaster.create({
+							title: error.error.message || error.error.statusText,
+							type: "error",
+						});
+					},
+				},
+			);
+		},
+		validators: {
+			onSubmit: z.object({
+				email: z.email("E-mail inválido"),
+				password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
+				rememberMe: z.boolean(),
+			}),
+		},
+	});
 
-  if (isPending) {
-    return <Loader />;
-  }
+	if (isPending) {
+		return <Loader />;
+	}
 
-  return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
-      <h1 className="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
+	return (
+		<Container maxW="md" mt={{ base: 8, md: 12 }} px={5} pb={10}>
+			<Stack gap={6}>
+				<Stack gap={2} textAlign="center">
+					<Heading as="h1" size="2xl" letterSpacing="-0.02em">
+						Entrar
+					</Heading>
+					<Text color="fg.muted">Acesse com seu e-mail e senha</Text>
+				</Stack>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
-        }}
-        className="space-y-4"
-      >
-        <div>
-          <form.Field name="email">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Email</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						void form.handleSubmit();
+					}}
+				>
+					<Stack gap={4}>
+						<form.Field name="email">
+							{(field) => {
+								const error = field.state.meta.errors[0]?.message;
+								return (
+									<Field.Root invalid={!!error}>
+										<Field.Label htmlFor={field.name}>E-mail</Field.Label>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="email"
+											autoComplete="email"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+										{error && <Field.ErrorText>{error}</Field.ErrorText>}
+									</Field.Root>
+								);
+							}}
+						</form.Field>
 
-        <div>
-          <form.Field name="password">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Password</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
+						<form.Field name="password">
+							{(field) => {
+								const error = field.state.meta.errors[0]?.message;
+								return (
+									<Field.Root invalid={!!error}>
+										<Field.Label htmlFor={field.name}>Senha</Field.Label>
+										<InputGroup
+											endElement={
+												<IconButton
+													type="button"
+													variant="ghost"
+													size="sm"
+													me="-2"
+													aria-label={
+														showPassword ? "Ocultar senha" : "Mostrar senha"
+													}
+													onClick={() => setShowPassword((prev) => !prev)}
+												>
+													{showPassword ? <LuEyeOff /> : <LuEye />}
+												</IconButton>
+											}
+										>
+											<Input
+												id={field.name}
+												name={field.name}
+												type={showPassword ? "text" : "password"}
+												autoComplete="current-password"
+												value={field.state.value}
+												onBlur={field.handleBlur}
+												onChange={(e) => field.handleChange(e.target.value)}
+											/>
+										</InputGroup>
+										{error && <Field.ErrorText>{error}</Field.ErrorText>}
+									</Field.Root>
+								);
+							}}
+						</form.Field>
 
-        <form.Subscribe
-          selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
-        >
-          {({ canSubmit, isSubmitting }) => (
-            <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Sign In"}
-            </Button>
-          )}
-        </form.Subscribe>
-      </form>
+						<HStack
+							justify="space-between"
+							align="center"
+							flexWrap="wrap"
+							gap={2}
+						>
+							<form.Field name="rememberMe">
+								{(field) => (
+									<Checkbox.Root
+										checked={field.state.value}
+										onCheckedChange={(details) =>
+											field.handleChange(details.checked === true)
+										}
+									>
+										<Checkbox.HiddenInput />
+										<Checkbox.Control />
+										<Checkbox.Label>Lembrar-me</Checkbox.Label>
+									</Checkbox.Root>
+								)}
+							</form.Field>
 
-      <div className="mt-4 text-center">
-        <Button
-          variant="link"
-          onClick={onSwitchToSignUp}
-          className="text-indigo-600 hover:text-indigo-800"
-        >
-          Need an account? Sign Up
-        </Button>
-      </div>
-    </div>
-  );
+							<Button
+								type="button"
+								variant="plain"
+								colorPalette="teal"
+								size="sm"
+								px={0}
+								onClick={() =>
+									toaster.create({
+										title: "Em breve",
+										description:
+											"A recuperação de senha estará disponível em breve.",
+										type: "info",
+									})
+								}
+							>
+								Esqueci a senha
+							</Button>
+						</HStack>
+
+						<form.Subscribe
+							selector={(state) => ({
+								canSubmit: state.canSubmit,
+								isSubmitting: state.isSubmitting,
+							})}
+						>
+							{({ canSubmit, isSubmitting }) => (
+								<Button
+									type="submit"
+									colorPalette="teal"
+									w="full"
+									disabled={!canSubmit || isSubmitting}
+								>
+									{isSubmitting ? "Entrando..." : "Entrar"}
+								</Button>
+							)}
+						</form.Subscribe>
+					</Stack>
+				</form>
+
+				<Button asChild variant="plain" colorPalette="teal" mx="auto">
+					<Link to="/">Voltar ao início</Link>
+				</Button>
+			</Stack>
+		</Container>
+	);
 }
