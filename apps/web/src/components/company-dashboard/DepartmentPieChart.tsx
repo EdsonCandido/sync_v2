@@ -1,5 +1,5 @@
-import { Box, Heading, HStack, Text, VStack } from "@chakra-ui/react";
 import { Chart, useChart } from "@chakra-ui/charts";
+import { Box, Heading, HStack, Text, VStack } from "@chakra-ui/react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { CompanyDashboard } from "@/lib/company-dashboard-api";
 
@@ -70,12 +70,7 @@ export function DepartmentPieChart({ data }: DepartmentPieChartProps) {
 						{data.map((item) => (
 							<HStack key={item.department} justify="space-between">
 								<HStack gap={2}>
-									<Box
-										w="2.5"
-										h="2.5"
-										borderRadius="full"
-										bg={item.color}
-									/>
+									<Box w="2.5" h="2.5" borderRadius="full" bg={item.color} />
 									<Text fontSize="sm" color="fg.muted">
 										{item.department}
 									</Text>

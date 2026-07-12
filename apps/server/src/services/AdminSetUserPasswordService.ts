@@ -11,11 +11,7 @@ import {
 export class AdminSetUserPasswordService {
 	constructor(private readonly userRepository = new UserRepository()) {}
 
-	async execute(
-		id: string,
-		input: AdminSetPasswordInput,
-		actor: ActorContext,
-	) {
+	async execute(id: string, input: AdminSetPasswordInput, actor: ActorContext) {
 		if (!isAdminOrSuper(actor.actorPerfil)) {
 			throw new AppError(403, "Sem permissão para definir senha.");
 		}

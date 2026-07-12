@@ -1,9 +1,9 @@
 import { createDb } from "@sync_v2/db";
 import * as schema from "@sync_v2/db/schema/auth";
 import { env } from "@sync_v2/env/server";
+import type { BetterAuthPlugin } from "better-auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import type { BetterAuthPlugin } from "better-auth";
 
 export type AuthHooks = {
 	before?: ReturnType<typeof import("better-auth/api").createAuthMiddleware>;

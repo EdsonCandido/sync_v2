@@ -1,8 +1,8 @@
 import {
 	Button,
 	Dialog,
-	HStack,
 	Heading,
+	HStack,
 	Input,
 	Spinner,
 	Stack,
@@ -14,13 +14,13 @@ import { useNavigate } from "react-router";
 
 import { CompanyFormDialog } from "@/components/empresas/CompanyFormDialog";
 import { toaster } from "@/components/ui/toaster";
-import { authClient } from "@/lib/auth-client";
 import { ApiError } from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 import {
 	type Company,
 	type CompanyInput,
-	type Plan,
 	companiesApi,
+	type Plan,
 	plansApi,
 } from "@/lib/companies-api";
 
@@ -55,7 +55,11 @@ export default function DashboardEmpresas() {
 	const load = useCallback(async () => {
 		setLoading(true);
 		try {
-			const result = await companiesApi.list({ q: search || undefined, page, pageSize });
+			const result = await companiesApi.list({
+				q: search || undefined,
+				page,
+				pageSize,
+			});
 			setItems(result.items);
 			setTotal(result.total);
 		} catch (error) {
@@ -190,7 +194,11 @@ export default function DashboardEmpresas() {
 					Nenhuma empresa encontrada.
 				</Text>
 			) : (
-				<Table.ScrollArea borderWidth="1px" borderColor="helios.border" rounded="md">
+				<Table.ScrollArea
+					borderWidth="1px"
+					borderColor="helios.border"
+					rounded="md"
+				>
 					<Table.Root size="sm" stickyHeader>
 						<Table.Header>
 							<Table.Row bg="bg.muted">
@@ -204,7 +212,9 @@ export default function DashboardEmpresas() {
 						<Table.Body>
 							{items.map((company) => (
 								<Table.Row key={company.id}>
-									<Table.Cell fontWeight="medium">{company.tradeName}</Table.Cell>
+									<Table.Cell fontWeight="medium">
+										{company.tradeName}
+									</Table.Cell>
 									<Table.Cell>{company.document}</Table.Cell>
 									<Table.Cell hideBelow="md">{company.email}</Table.Cell>
 									<Table.Cell hideBelow="md">

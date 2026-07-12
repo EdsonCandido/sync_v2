@@ -13,14 +13,14 @@ import { useEffect, useRef, useState } from "react";
 import z from "zod";
 
 import { toaster } from "@/components/ui/toaster";
+import { ApiError } from "@/lib/api";
 import {
 	type Company,
 	type CompanyInput,
-	type Plan,
 	cepApi,
 	geocodeApi,
+	type Plan,
 } from "@/lib/companies-api";
-import { ApiError } from "@/lib/api";
 
 import { CompanyMap } from "./CompanyMap";
 
@@ -155,7 +155,10 @@ export function CompanyFormDialog({
 			form.setFieldValue("district", result.district);
 			form.setFieldValue("city", result.city);
 			form.setFieldValue("state", result.state);
-			toaster.create({ title: "Endereço preenchido pelo CEP", type: "success" });
+			toaster.create({
+				title: "Endereço preenchido pelo CEP",
+				type: "success",
+			});
 		} catch (error) {
 			toaster.create({
 				title: error instanceof ApiError ? error.message : "Erro ao buscar CEP",
@@ -245,7 +248,13 @@ export function CompanyFormDialog({
 												onChange={(e) => field.handleChange(e.target.value)}
 												onBlur={field.handleBlur}
 											/>
-											<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+											<Field.ErrorText>
+												{String(
+													field.state.meta.errors[0]?.message ??
+														field.state.meta.errors[0] ??
+														"",
+												)}
+											</Field.ErrorText>
 										</Field.Root>
 									)}
 								</form.Field>
@@ -262,11 +271,21 @@ export function CompanyFormDialog({
 												onChange={(e) => field.handleChange(e.target.value)}
 												onBlur={field.handleBlur}
 											/>
-											<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+											<Field.ErrorText>
+												{String(
+													field.state.meta.errors[0]?.message ??
+														field.state.meta.errors[0] ??
+														"",
+												)}
+											</Field.ErrorText>
 										</Field.Root>
 									)}
 								</form.Field>
-								<HStack align="start" gap={4} flexDir={{ base: "column", md: "row" }}>
+								<HStack
+									align="start"
+									gap={4}
+									flexDir={{ base: "column", md: "row" }}
+								>
 									<form.Field name="document">
 										{(field) => (
 											<Field.Root
@@ -281,7 +300,13 @@ export function CompanyFormDialog({
 													onChange={(e) => field.handleChange(e.target.value)}
 													onBlur={field.handleBlur}
 												/>
-												<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+												<Field.ErrorText>
+													{String(
+														field.state.meta.errors[0]?.message ??
+															field.state.meta.errors[0] ??
+															"",
+													)}
+												</Field.ErrorText>
 											</Field.Root>
 										)}
 									</form.Field>
@@ -299,7 +324,13 @@ export function CompanyFormDialog({
 													onChange={(e) => field.handleChange(e.target.value)}
 													onBlur={field.handleBlur}
 												/>
-												<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+												<Field.ErrorText>
+													{String(
+														field.state.meta.errors[0]?.message ??
+															field.state.meta.errors[0] ??
+															"",
+													)}
+												</Field.ErrorText>
 											</Field.Root>
 										)}
 									</form.Field>
@@ -318,7 +349,13 @@ export function CompanyFormDialog({
 												onChange={(e) => field.handleChange(e.target.value)}
 												onBlur={field.handleBlur}
 											/>
-											<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+											<Field.ErrorText>
+												{String(
+													field.state.meta.errors[0]?.message ??
+														field.state.meta.errors[0] ??
+														"",
+												)}
+											</Field.ErrorText>
 										</Field.Root>
 									)}
 								</form.Field>
@@ -356,7 +393,13 @@ export function CompanyFormDialog({
 													))}
 												</NativeSelect.Field>
 											</NativeSelect.Root>
-											<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+											<Field.ErrorText>
+												{String(
+													field.state.meta.errors[0]?.message ??
+														field.state.meta.errors[0] ??
+														"",
+												)}
+											</Field.ErrorText>
 										</Field.Root>
 									)}
 								</form.Field>
@@ -380,7 +423,13 @@ export function CompanyFormDialog({
 													void handleCepBlur(field.state.value);
 												}}
 											/>
-											<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+											<Field.ErrorText>
+												{String(
+													field.state.meta.errors[0]?.message ??
+														field.state.meta.errors[0] ??
+														"",
+												)}
+											</Field.ErrorText>
 										</Field.Root>
 									)}
 								</form.Field>
@@ -400,7 +449,11 @@ export function CompanyFormDialog({
 										</Field.Root>
 									)}
 								</form.Field>
-								<HStack align="start" gap={4} flexDir={{ base: "column", md: "row" }}>
+								<HStack
+									align="start"
+									gap={4}
+									flexDir={{ base: "column", md: "row" }}
+								>
 									<form.Field name="number">
 										{(field) => (
 											<Field.Root
@@ -418,7 +471,13 @@ export function CompanyFormDialog({
 														void maybeGeocode(form.state.values);
 													}}
 												/>
-												<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+												<Field.ErrorText>
+													{String(
+														field.state.meta.errors[0]?.message ??
+															field.state.meta.errors[0] ??
+															"",
+													)}
+												</Field.ErrorText>
 											</Field.Root>
 										)}
 									</form.Field>
@@ -452,7 +511,11 @@ export function CompanyFormDialog({
 										</Field.Root>
 									)}
 								</form.Field>
-								<HStack align="start" gap={4} flexDir={{ base: "column", md: "row" }}>
+								<HStack
+									align="start"
+									gap={4}
+									flexDir={{ base: "column", md: "row" }}
+								>
 									<form.Field name="city">
 										{(field) => (
 											<Field.Root
@@ -470,7 +533,13 @@ export function CompanyFormDialog({
 														void maybeGeocode(form.state.values);
 													}}
 												/>
-												<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+												<Field.ErrorText>
+													{String(
+														field.state.meta.errors[0]?.message ??
+															field.state.meta.errors[0] ??
+															"",
+													)}
+												</Field.ErrorText>
 											</Field.Root>
 										)}
 									</form.Field>
@@ -494,14 +563,22 @@ export function CompanyFormDialog({
 														void maybeGeocode(form.state.values);
 													}}
 												/>
-												<Field.ErrorText>{String(field.state.meta.errors[0]?.message ?? field.state.meta.errors[0] ?? "")}</Field.ErrorText>
+												<Field.ErrorText>
+													{String(
+														field.state.meta.errors[0]?.message ??
+															field.state.meta.errors[0] ??
+															"",
+													)}
+												</Field.ErrorText>
 											</Field.Root>
 										)}
 									</form.Field>
 								</HStack>
 
 								<form.Subscribe
-									selector={(s) => [s.values.latitude, s.values.longitude] as const}
+									selector={(s) =>
+										[s.values.latitude, s.values.longitude] as const
+									}
 								>
 									{([latitude, longitude]) =>
 										latitude != null && longitude != null ? (

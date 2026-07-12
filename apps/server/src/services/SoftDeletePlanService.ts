@@ -10,8 +10,7 @@ export class SoftDeletePlanService {
 			throw new AppError(404, "Plano não encontrado.");
 		}
 
-		const linked =
-			await this.planRepository.countActiveCompaniesByPlanId(id);
+		const linked = await this.planRepository.countActiveCompaniesByPlanId(id);
 		if (linked > 0) {
 			throw new AppError(
 				409,

@@ -71,9 +71,7 @@ export const companiesApi = {
 		if (params.page) search.set("page", String(params.page));
 		if (params.pageSize) search.set("pageSize", String(params.pageSize));
 		const qs = search.toString();
-		return apiFetch<CompanyListResult>(
-			`/api/companies${qs ? `?${qs}` : ""}`,
-		);
+		return apiFetch<CompanyListResult>(`/api/companies${qs ? `?${qs}` : ""}`);
 	},
 	get: (id: string) => apiFetch<Company>(`/api/companies/${id}`),
 	create: (body: CompanyInput) =>
@@ -90,7 +88,7 @@ export const companiesApi = {
 		apiFetch<Company>(`/api/companies/${id}`, { method: "DELETE" }),
 };
 
-export { plansApi, type Plan } from "./plans-api";
+export { type Plan, plansApi } from "./plans-api";
 
 export const cepApi = {
 	lookup: (cep: string) =>

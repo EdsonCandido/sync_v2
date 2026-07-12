@@ -1,9 +1,6 @@
 import type { ListUsersQuery } from "@sync_v2/contracts";
 import { UserRepository } from "../repositories/UserRepository";
-import {
-	type ActorContext,
-	resolveListCompanyScope,
-} from "./UserAccessRules";
+import { type ActorContext, resolveListCompanyScope } from "./UserAccessRules";
 
 export class ListUsersService {
 	constructor(private readonly userRepository = new UserRepository()) {}

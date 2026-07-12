@@ -1,8 +1,8 @@
 import {
 	Button,
 	Dialog,
-	HStack,
 	Heading,
+	HStack,
 	Input,
 	Spinner,
 	Stack,
@@ -16,11 +16,7 @@ import { PlanFormDialog } from "@/components/planos/PlanFormDialog";
 import { toaster } from "@/components/ui/toaster";
 import { ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
-import {
-	type Plan,
-	type PlanInput,
-	plansApi,
-} from "@/lib/plans-api";
+import { type Plan, type PlanInput, plansApi } from "@/lib/plans-api";
 
 function formatDate(value: string) {
 	const d = new Date(value);

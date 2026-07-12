@@ -71,11 +71,7 @@ export class GetCompanyDashboardService {
 			this.userRepository.countActive(companyId),
 			this.userRepository.countRegistered(companyId),
 			this.requestRepository.countPending(companyId),
-			this.userRepository.countCreatedBetween(
-				companyId,
-				startOfThisMonth,
-				now,
-			),
+			this.userRepository.countCreatedBetween(companyId, startOfThisMonth, now),
 			this.userRepository.countCreatedBetween(
 				companyId,
 				startOfLastMonth,
@@ -103,7 +99,10 @@ export class GetCompanyDashboardService {
 		);
 
 		const growthDelta = percentDelta(createdThisMonth, createdLastMonth);
-		const usageDelta = percentDelta(currentPeriodAccesses, previousPeriodAccesses);
+		const usageDelta = percentDelta(
+			currentPeriodAccesses,
+			previousPeriodAccesses,
+		);
 
 		const usageByDate = new Map(
 			usageRows.map((row) => [row.date, Number(row.accesses)]),
