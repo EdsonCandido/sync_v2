@@ -79,9 +79,11 @@ export const KANBAN_HISTORY_EVENT_TYPES = [
 	"checklist",
 	"assignees",
 	"tags",
+	"attachment",
 ] as const;
 
-export type KanbanHistoryEventType = (typeof KANBAN_HISTORY_EVENT_TYPES)[number];
+export type KanbanHistoryEventType =
+	(typeof KANBAN_HISTORY_EVENT_TYPES)[number];
 
 export const KANBAN_TAG_COLORS = [
 	"gray",
@@ -92,3 +94,48 @@ export const KANBAN_TAG_COLORS = [
 ] as const;
 
 export type KanbanTagColor = (typeof KANBAN_TAG_COLORS)[number];
+
+export const FINANCIAL_CATEGORY_TIPOS = ["receita", "despesa"] as const;
+
+export type FinancialCategoryTipo = (typeof FINANCIAL_CATEGORY_TIPOS)[number];
+
+export const BANK_ACCOUNT_TIPOS = [
+	"corrente",
+	"poupanca",
+	"investimento",
+	"outro",
+] as const;
+
+export type BankAccountTipo = (typeof BANK_ACCOUNT_TIPOS)[number];
+
+export const FINANCIAL_ENTRY_KINDS = ["receber", "pagar"] as const;
+
+export type FinancialEntryKind = (typeof FINANCIAL_ENTRY_KINDS)[number];
+
+export const FINANCIAL_ORIGIN_TYPES = ["avulsa", "kanban", "manual"] as const;
+
+export type FinancialOriginType = (typeof FINANCIAL_ORIGIN_TYPES)[number];
+
+export const FINANCIAL_ENTRY_STATUSES = [
+	"em_aberto",
+	"parcial",
+	"pago",
+	"cancelado",
+	"vencido",
+] as const;
+
+export type FinancialEntryStatus = (typeof FINANCIAL_ENTRY_STATUSES)[number];
+
+export const FINANCIAL_HISTORY_ACTIONS = [
+	"created",
+	"updated",
+	"cancelled",
+	"received",
+	"paid",
+	"reversed",
+	"renegotiated",
+	"installment",
+	"attachment",
+] as const;
+
+export type FinancialHistoryAction = (typeof FINANCIAL_HISTORY_ACTIONS)[number];

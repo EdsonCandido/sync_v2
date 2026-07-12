@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { KanbanController } from "../controllers/KanbanController";
+import { kanbanAttachmentUpload } from "../middlewares/KanbanAttachmentUploadMiddleware";
 import { requireAuth } from "../middlewares/RequireAuthMiddleware";
 import { requireModuleAccess } from "../middlewares/RequireModuleAccessMiddleware";
 
@@ -58,4 +59,21 @@ kanbanRoutes.post(
 	"/cards/:cardId/observations",
 	editAccess.handle,
 	controller.addObservation,
+);
+
+kanbanRoutes.post(
+	"/cards/:cardId/attachments",
+	editAccess.handle,
+	kanbanAttachmentUpload.single("file"),
+	controller.uploadAttachment,
+);
+kanbanRoutes.get(
+	"/cards/:cardId/attachments/:attachmentId/download",
+	readAccess.handle,
+	controller.downloadAttachment,
+);
+kanbanRoutes.delete(
+	"/cards/:cardId/attachments/:attachmentId",
+	editAccess.handle,
+	controller.softDeleteAttachment,
 );

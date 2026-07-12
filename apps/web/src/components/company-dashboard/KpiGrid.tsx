@@ -1,5 +1,4 @@
 import { SimpleGrid } from "@chakra-ui/react";
-import type { CompanyDashboard } from "@/lib/company-dashboard-api";
 import {
 	LuBadgePercent,
 	LuCalendarClock,
@@ -8,6 +7,7 @@ import {
 	LuUserCheck,
 	LuUsers,
 } from "react-icons/lu";
+import type { CompanyDashboard } from "@/lib/company-dashboard-api";
 import { KpiCard } from "./KpiCard";
 
 const KPI_ICONS = {
@@ -30,9 +30,7 @@ export function KpiGrid({ kpis, onKpiClick }: KpiGridProps) {
 			{kpis.map((kpi) => (
 				<KpiCard
 					key={kpi.id}
-					icon={
-						KPI_ICONS[kpi.id as keyof typeof KPI_ICONS] ?? LuUsers
-					}
+					icon={KPI_ICONS[kpi.id as keyof typeof KPI_ICONS] ?? LuUsers}
 					label={kpi.label}
 					value={kpi.value}
 					description={kpi.description}

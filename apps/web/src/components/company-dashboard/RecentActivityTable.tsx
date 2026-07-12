@@ -43,9 +43,7 @@ export function RecentActivityTable({ activities }: RecentActivityTableProps) {
 									<Table.Row key={item.id}>
 										<Table.Cell fontWeight="600">{item.userName}</Table.Cell>
 										<Table.Cell color="fg.muted">{item.action}</Table.Cell>
-										<Table.Cell>
-											{at.toLocaleDateString("pt-BR")}
-										</Table.Cell>
+										<Table.Cell>{at.toLocaleDateString("pt-BR")}</Table.Cell>
 										<Table.Cell>
 											{at.toLocaleTimeString("pt-BR", {
 												hour: "2-digit",

@@ -1,3 +1,4 @@
+import { KanbanAttachmentRepository } from "../repositories/KanbanAttachmentRepository";
 import { KanbanCardRepository } from "../repositories/KanbanCardRepository";
 import { KanbanChecklistRepository } from "../repositories/KanbanChecklistRepository";
 import { KanbanHistoryRepository } from "../repositories/KanbanHistoryRepository";
@@ -11,6 +12,7 @@ export class FindKanbanCardService {
 		private readonly checklistRepository = new KanbanChecklistRepository(),
 		private readonly historyRepository = new KanbanHistoryRepository(),
 		private readonly tagRepository = new KanbanTagRepository(),
+		private readonly attachmentRepository = new KanbanAttachmentRepository(),
 	) {}
 
 	async execute(
@@ -35,6 +37,7 @@ export class FindKanbanCardService {
 		const checklistItems = await this.checklistRepository.listByCard(id);
 		const history = await this.historyRepository.listByCard(id);
 		const tagRows = await this.tagRepository.listTagsForCards([id]);
+		const attachments = await this.attachmentRepository.listByCard(id);
 		const observationCount = history.filter(
 			(h) => h.eventType === "observation",
 		).length;
@@ -74,6 +77,14 @@ export class FindKanbanCardService {
 			createdAt: row.card.createdAt,
 			updatedAt: row.card.updatedAt,
 			createdBy: row.card.createdBy,
+			attachments: attachments.map((a) => ({
+				id: a.id,
+				originalName: a.originalName,
+				mimeType: a.mimeType,
+				sizeBytes: a.sizeBytes,
+				uploadedBy: a.uploadedBy,
+				createdAt: a.createdAt,
+			})),
 			history: history.map((h) => ({
 				id: h.id,
 				eventType: h.eventType,

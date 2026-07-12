@@ -1,20 +1,23 @@
-import { auth } from "./auth";
 import { db } from "@sync_v2/db";
 import { user } from "@sync_v2/db/schema/auth";
 import { clients } from "@sync_v2/db/schema/clients";
 import { companies } from "@sync_v2/db/schema/companies";
 import {
-	accessEvents,
-	companyActivities,
-	companyContracts,
-	companyPayments,
-	companyRequests,
-} from "@sync_v2/db/schema/company-dashboard";
-import { userModulePermissions } from "@sync_v2/db/schema/module-permissions";
+	bankAccounts,
+	costCenters,
+	financialCategories,
+} from "@sync_v2/db/schema/financeiro";
 import { plans } from "@sync_v2/db/schema/plans";
 import { env } from "@sync_v2/env/server";
-import { USER_DEPARTMENTS } from "@sync_v2/types";
 import { and, eq } from "drizzle-orm";
+import { auth } from "./auth";
+
+function requireSeedEnv(name: string, value: string | undefined): string {
+	if (!value) {
+		throw new Error(`Seed: variável obrigatória ausente: ${name}`);
+	}
+	return value;
+}
 
 async function ensureUser(params: {
 	name: string;
@@ -23,8 +26,6 @@ async function ensureUser(params: {
 	perfil: string;
 	companyId?: string | null;
 	department?: string | null;
-	blocked?: boolean;
-	lastAccessAt?: Date | null;
 }) {
 	const [existing] = await db
 		.select()
@@ -38,8 +39,7 @@ async function ensureUser(params: {
 		name: params.name,
 		companyId: params.companyId ?? null,
 		department: params.department ?? null,
-		blocked: params.blocked ?? false,
-		lastAccessAt: params.lastAccessAt ?? null,
+		blocked: false,
 		emailVerified: true,
 		updatedAt: new Date(),
 	};
@@ -117,8 +117,14 @@ async function ensurePlanBasico() {
 	return created.id;
 }
 
-async function ensureEmpresaDemo(planId: string) {
-	const document = "11222333000181";
+async function ensureHeliosCompany(planId: string) {
+	const name = requireSeedEnv("SEED_COMPANY_NAME", env.SEED_COMPANY_NAME);
+	const document = requireSeedEnv(
+		"SEED_COMPANY_DOCUMENT",
+		env.SEED_COMPANY_DOCUMENT,
+	);
+	const email = requireSeedEnv("SEED_COMPANY_EMAIL", env.SEED_COMPANY_EMAIL);
+
 	const [existing] = await db
 		.select()
 		.from(companies)
@@ -126,20 +132,20 @@ async function ensureEmpresaDemo(planId: string) {
 		.limit(1);
 
 	const planExpiresAt = new Date();
-	planExpiresAt.setDate(planExpiresAt.getDate() + 8);
+	planExpiresAt.setDate(planExpiresAt.getDate() + 365);
 
 	const payload = {
-		corporateName: "Empresa Demo LTDA",
-		tradeName: "Empresa Demo",
+		corporateName: `${name} LTDA`,
+		tradeName: name,
 		document,
-		email: "contato@empresademo.com",
+		email,
 		phone: "11999990000",
-		website: "https://empresademo.com",
+		website: "https://helioslabs.com.br",
 		logo: null as string | null,
 		zipCode: "01310100",
 		street: "Avenida Paulista",
 		number: "1000",
-		complement: "Sala 101",
+		complement: null as string | null,
 		district: "Bela Vista",
 		city: "São Paulo",
 		state: "SP",
@@ -156,419 +162,257 @@ async function ensureEmpresaDemo(planId: string) {
 			.update(companies)
 			.set(payload)
 			.where(eq(companies.id, existing.id));
-		console.log("Seed: Empresa Demo já existia.");
+		console.log(`Seed: empresa ${name} já existia.`);
 		return existing.id;
 	}
 
 	const [created] = await db.insert(companies).values(payload).returning();
 	if (!created) {
-		throw new Error("Falha ao criar Empresa Demo.");
+		throw new Error(`Falha ao criar empresa ${name}.`);
 	}
-	console.log("Seed: Empresa Demo criada.");
+	console.log(`Seed: empresa ${name} criada.`);
 	return created.id;
 }
 
-async function ensureEnvSuperUser() {
-	const name = env.SEED_SUPER_NAME;
-	const email = env.SEED_SUPER_EMAIL;
-	const password = env.SEED_SUPER_PASSWORD;
-
-	if (!name || !email || !password) {
-		console.log(
-			"Seed: SEED_SUPER_* não definido — pulando super do .env.",
-		);
-		return;
-	}
-
-	await ensureUser({
-		name,
-		email,
-		password,
-		perfil: "super",
-		companyId: null,
-	});
-}
-
-async function daysAgo(days: number) {
-	const d = new Date();
-	d.setDate(d.getDate() - days);
-	return d;
-}
-
-async function seedCompanyDashboardData(
-	companyId: string,
-	adminUserId: string,
-	memberIds: string[],
-) {
-	await db
-		.update(accessEvents)
-		.set({ ativo: false, updatedAt: new Date() })
-		.where(
-			and(eq(accessEvents.companyId, companyId), eq(accessEvents.ativo, true)),
-		);
-	await db
-		.update(companyActivities)
-		.set({ ativo: false, updatedAt: new Date() })
-		.where(
-			and(
-				eq(companyActivities.companyId, companyId),
-				eq(companyActivities.ativo, true),
-			),
-		);
-	await db
-		.update(companyRequests)
-		.set({ ativo: false, updatedAt: new Date() })
-		.where(
-			and(
-				eq(companyRequests.companyId, companyId),
-				eq(companyRequests.ativo, true),
-			),
-		);
-	await db
-		.update(companyContracts)
-		.set({ ativo: false, updatedAt: new Date() })
-		.where(
-			and(
-				eq(companyContracts.companyId, companyId),
-				eq(companyContracts.ativo, true),
-			),
-		);
-	await db
-		.update(companyPayments)
-		.set({ ativo: false, updatedAt: new Date() })
-		.where(
-			and(
-				eq(companyPayments.companyId, companyId),
-				eq(companyPayments.ativo, true),
-			),
-		);
-
-	await db.insert(companyRequests).values([
-		{
-			companyId,
-			title: "Acesso ao módulo Financeiro",
-			status: "pending",
-			requestedByUserId: memberIds[0] ?? adminUserId,
-		},
-		{
-			companyId,
-			title: "Reset de senha — Ana Costa",
-			status: "pending",
-			requestedByUserId: memberIds[1] ?? adminUserId,
-		},
-		{
-			companyId,
-			title: "Novo usuário Comercial",
-			status: "pending",
-			requestedByUserId: adminUserId,
-		},
-		{
-			companyId,
-			title: "Upgrade de permissões RH",
-			status: "approved",
-			requestedByUserId: memberIds[2] ?? adminUserId,
-		},
-	]);
-
-	await db.insert(companyContracts).values([
-		{
-			companyId,
-			title: "Contrato de suporte premium",
-			expiresAt: await daysAgo(-12),
-		},
-		{
-			companyId,
-			title: "Licença integração ERP",
-			expiresAt: await daysAgo(-5),
-		},
-		{
-			companyId,
-			title: "Contrato anual SaaS",
-			expiresAt: await daysAgo(-90),
-		},
-	]);
-
-	await db.insert(companyPayments).values([
-		{
-			companyId,
-			description: "Mensalidade Julho",
-			amount: 899.9,
-			status: "pending",
-			dueDate: await daysAgo(-3),
-		},
-		{
-			companyId,
-			description: "Taxa de onboarding",
-			amount: 250,
-			status: "pending",
-			dueDate: await daysAgo(-10),
-		},
-		{
-			companyId,
-			description: "Mensalidade Junho",
-			amount: 899.9,
-			status: "paid",
-			dueDate: await daysAgo(20),
-		},
-	]);
-
-	const activityUsers = [adminUserId, ...memberIds];
-	const actions = [
-		"Entrou no sistema",
-		"Atualizou perfil",
-		"Criou solicitação",
-		"Visualizou relatório",
-		"Editou cliente",
-		"Aprovou acesso",
-		"Exportou dados",
-	];
-
-	await db.insert(companyActivities).values(
-		Array.from({ length: 12 }, (_, i) => ({
-			companyId,
-			userId: activityUsers[i % activityUsers.length]!,
-			action: actions[i % actions.length]!,
-			createdAt: new Date(Date.now() - i * 3_600_000 * 5),
-			updatedAt: new Date(Date.now() - i * 3_600_000 * 5),
-		})),
+async function ensureHeliosClient(companyId: string, userId: string) {
+	const name = requireSeedEnv("SEED_CLIENT_NAME", env.SEED_CLIENT_NAME);
+	const document = requireSeedEnv(
+		"SEED_CLIENT_DOCUMENT",
+		env.SEED_CLIENT_DOCUMENT,
+	);
+	const companyEmail = requireSeedEnv(
+		"SEED_COMPANY_EMAIL",
+		env.SEED_COMPANY_EMAIL,
 	);
 
-	const accessRows: {
-		companyId: string;
-		userId: string;
-		accessedAt: Date;
-	}[] = [];
+	const payload = {
+		personType: "PJ",
+		document,
+		name,
+		tradeName: name,
+		email: companyEmail,
+		phone: "11999990000",
+		zipCode: "01310100",
+		street: "Avenida Paulista",
+		number: "1000",
+		complement: null as string | null,
+		district: "Bela Vista",
+		city: "São Paulo",
+		state: "SP",
+		latitude: -23.561414,
+		longitude: -46.655881,
+		ativo: true,
+		updatedAt: new Date(),
+		updatedBy: userId,
+	};
 
-	for (let day = 0; day < 30; day++) {
-		const base = await daysAgo(29 - day);
-		const count = 4 + ((day * 3) % 9) + (day > 20 ? 6 : 0);
-		for (let i = 0; i < count; i++) {
-			const accessedAt = new Date(base);
-			accessedAt.setHours(8 + (i % 10), (i * 7) % 60, 0, 0);
-			accessRows.push({
-				companyId,
-				userId: activityUsers[i % activityUsers.length]!,
-				accessedAt,
-			});
-		}
-	}
-
-	await db.insert(accessEvents).values(accessRows);
-	console.log("Seed: dados do dashboard da empresa demo.");
-}
-
-async function ensureModulePermission(params: {
-	userId: string;
-	moduleKey: string;
-	canRead: boolean;
-	canEdit: boolean;
-}) {
 	const [existing] = await db
 		.select()
-		.from(userModulePermissions)
+		.from(clients)
 		.where(
-			and(
-				eq(userModulePermissions.userId, params.userId),
-				eq(userModulePermissions.moduleKey, params.moduleKey),
-			),
+			and(eq(clients.companyId, companyId), eq(clients.document, document)),
 		)
 		.limit(1);
 
 	if (existing) {
-		await db
-			.update(userModulePermissions)
-			.set({
-				canRead: params.canRead,
-				canEdit: params.canEdit,
-				ativo: true,
-				updatedAt: new Date(),
-			})
-			.where(eq(userModulePermissions.id, existing.id));
-		return;
+		await db.update(clients).set(payload).where(eq(clients.id, existing.id));
+		console.log(`Seed: cliente ${name} já existia.`);
+		return existing.id;
 	}
 
-	await db.insert(userModulePermissions).values({
-		userId: params.userId,
-		moduleKey: params.moduleKey,
-		canRead: params.canRead,
-		canEdit: params.canEdit,
-	});
+	const [created] = await db
+		.insert(clients)
+		.values({
+			companyId,
+			...payload,
+			createdBy: userId,
+		})
+		.returning();
+
+	if (!created) {
+		throw new Error(`Falha ao criar cliente ${name}.`);
+	}
+	console.log(`Seed: cliente ${name} criado.`);
+	return created.id;
 }
 
-async function seedModulePermissions(memberIds: string[]) {
-	const anaId = memberIds[0];
-	const brunoId = memberIds[1];
-	const carlaId = memberIds[2];
-
-	if (anaId) {
-		await ensureModulePermission({
-			userId: anaId,
-			moduleKey: "clientes",
-			canRead: true,
-			canEdit: false,
-		});
-		await ensureModulePermission({
-			userId: anaId,
-			moduleKey: "financeiro",
-			canRead: true,
-			canEdit: true,
-		});
-		await ensureModulePermission({
-			userId: anaId,
-			moduleKey: "usuarios",
-			canRead: true,
-			canEdit: false,
-		});
-	}
-
-	if (brunoId) {
-		await ensureModulePermission({
-			userId: brunoId,
-			moduleKey: "clientes",
-			canRead: true,
-			canEdit: true,
-		});
-		await ensureModulePermission({
-			userId: brunoId,
-			moduleKey: "kanban",
-			canRead: true,
-			canEdit: true,
-		});
-		await ensureModulePermission({
-			userId: brunoId,
-			moduleKey: "usuarios",
-			canRead: true,
-			canEdit: true,
-		});
-	}
-
-	if (carlaId) {
-		await ensureModulePermission({
-			userId: carlaId,
-			moduleKey: "kanban",
-			canRead: true,
-			canEdit: false,
-		});
-	}
-
-	console.log("Seed: permissões de módulo demo.");
-}
-
-async function seedDemoClients(companyId: string, userId: string) {
-	const demos = [
+async function ensureFinanceiroBase(companyId: string, userId: string) {
+	const receitaCats = [
+		{ name: "Venda", tipo: "receita", cor: "green", icone: "shopping" },
+		{ name: "Serviços", tipo: "receita", cor: "blue", icone: "wrench" },
+		{ name: "Mensalidades", tipo: "receita", cor: "teal", icone: "calendar" },
 		{
-			personType: "PF",
-			document: "12345678901",
-			name: "João da Silva",
-			tradeName: null as string | null,
-			email: "joao.silva@email.com",
-			phone: "11988887777",
-			zipCode: "01310100",
-			street: "Avenida Paulista",
-			number: "500",
-			complement: "Apto 12",
-			district: "Bela Vista",
-			city: "São Paulo",
-			state: "SP",
-			latitude: -23.561414,
-			longitude: -46.655881,
+			name: "Consultorias",
+			tipo: "receita",
+			cor: "purple",
+			icone: "briefcase",
 		},
-		{
-			personType: "PJ",
-			document: "AB12CD345678901",
-			name: "Comércio Beta LTDA",
-			tradeName: "Beta Store",
-			email: "contato@betastore.com",
-			phone: "1133334444",
-			zipCode: "22041080",
-			street: "Avenida Atlântica",
-			number: "1702",
-			complement: null as string | null,
-			district: "Copacabana",
-			city: "Rio de Janeiro",
-			state: "RJ",
-			latitude: -22.971964,
-			longitude: -43.182543,
-		},
-		{
-			personType: "PF",
-			document: "98765432100",
-			name: "Maria Oliveira",
-			tradeName: null as string | null,
-			email: "maria.oliveira@email.com",
-			phone: "21977776666",
-			zipCode: "30130100",
-			street: "Avenida Afonso Pena",
-			number: "1500",
-			complement: null as string | null,
-			district: "Centro",
-			city: "Belo Horizonte",
-			state: "MG",
-			latitude: -19.924501,
-			longitude: -43.935238,
-		},
+		{ name: "Comissão", tipo: "receita", cor: "cyan", icone: "percent" },
+	];
+	const despesaCats = [
+		{ name: "Água", tipo: "despesa", cor: "blue", icone: "droplet" },
+		{ name: "Energia", tipo: "despesa", cor: "yellow", icone: "zap" },
+		{ name: "Internet", tipo: "despesa", cor: "orange", icone: "wifi" },
+		{ name: "Salários", tipo: "despesa", cor: "red", icone: "users" },
+		{ name: "Marketing", tipo: "despesa", cor: "pink", icone: "megaphone" },
+		{ name: "Impostos", tipo: "despesa", cor: "gray", icone: "landmark" },
+		{ name: "Combustível", tipo: "despesa", cor: "amber", icone: "fuel" },
 	];
 
-	for (const demo of demos) {
+	for (const cat of [...receitaCats, ...despesaCats]) {
 		const [existing] = await db
 			.select()
-			.from(clients)
+			.from(financialCategories)
 			.where(
 				and(
-					eq(clients.companyId, companyId),
-					eq(clients.document, demo.document),
+					eq(financialCategories.companyId, companyId),
+					eq(financialCategories.name, cat.name),
+					eq(financialCategories.ativo, true),
 				),
 			)
 			.limit(1);
+		if (existing) continue;
 
-		if (existing) {
-			await db
-				.update(clients)
-				.set({
-					...demo,
-					ativo: true,
-					updatedAt: new Date(),
-					updatedBy: userId,
-				})
-				.where(eq(clients.id, existing.id));
-			continue;
-		}
-
-		await db.insert(clients).values({
+		await db.insert(financialCategories).values({
 			companyId,
-			...demo,
+			name: cat.name,
+			tipo: cat.tipo,
+			cor: cat.cor,
+			icone: cat.icone,
 			createdBy: userId,
 			updatedBy: userId,
 		});
 	}
+	console.log("Seed: categorias financeiras.");
 
-	console.log("Seed: clientes demo (PF/PJ).");
+	const centros = [
+		{ name: "Administrativo", codigo: "ADM" },
+		{ name: "Comercial", codigo: "COM" },
+		{ name: "Marketing", codigo: "MKT" },
+		{ name: "Financeiro", codigo: "FIN" },
+		{ name: "TI", codigo: "TI" },
+		{ name: "Operacional", codigo: "OPS" },
+	];
+
+	for (const cc of centros) {
+		const [existing] = await db
+			.select()
+			.from(costCenters)
+			.where(
+				and(
+					eq(costCenters.companyId, companyId),
+					eq(costCenters.codigo, cc.codigo),
+					eq(costCenters.ativo, true),
+				),
+			)
+			.limit(1);
+		if (existing) continue;
+
+		await db.insert(costCenters).values({
+			companyId,
+			name: cc.name,
+			codigo: cc.codigo,
+			createdBy: userId,
+			updatedBy: userId,
+		});
+	}
+	console.log("Seed: centros de custo.");
+
+	const banco = env.SEED_BANK_NAME ?? "Banco do Brasil";
+	const agencia = env.SEED_BANK_AGENCIA ?? "1234-5";
+	const conta = env.SEED_BANK_CONTA ?? "12345-6";
+
+	const [existingBank] = await db
+		.select()
+		.from(bankAccounts)
+		.where(
+			and(
+				eq(bankAccounts.companyId, companyId),
+				eq(bankAccounts.conta, conta),
+				eq(bankAccounts.ativo, true),
+			),
+		)
+		.limit(1);
+
+	if (existingBank) {
+		await db
+			.update(bankAccounts)
+			.set({
+				banco,
+				agencia,
+				tipo: "corrente",
+				updatedAt: new Date(),
+				updatedBy: userId,
+			})
+			.where(eq(bankAccounts.id, existingBank.id));
+		console.log(`Seed: banco ${banco} já existia.`);
+		return;
+	}
+
+	await db.insert(bankAccounts).values({
+		companyId,
+		banco,
+		agencia,
+		conta,
+		tipo: "corrente",
+		saldoInicial: 0,
+		saldoAtual: 0,
+		dataSaldoInicial: new Date(),
+		cor: "blue",
+		createdBy: userId,
+		updatedBy: userId,
+	});
+	console.log(`Seed: banco ${banco} criado.`);
 }
 
 async function main() {
-	console.log("Seed: configurações iniciais…");
+	console.log("Seed: bootstrap Helios Labs…");
 
-	await ensureEnvSuperUser();
+	const superName = requireSeedEnv("SEED_SUPER_NAME", env.SEED_SUPER_NAME);
+	const superEmail = requireSeedEnv("SEED_SUPER_EMAIL", env.SEED_SUPER_EMAIL);
+	const superPassword = requireSeedEnv(
+		"SEED_SUPER_PASSWORD",
+		env.SEED_SUPER_PASSWORD,
+	);
+
+	const adminName = requireSeedEnv("SEED_ADMIN_NAME", env.SEED_ADMIN_NAME);
+	const adminEmail = requireSeedEnv("SEED_ADMIN_EMAIL", env.SEED_ADMIN_EMAIL);
+	const adminPassword = requireSeedEnv(
+		"SEED_ADMIN_PASSWORD",
+		env.SEED_ADMIN_PASSWORD,
+	);
+
+	const clienteName = requireSeedEnv(
+		"SEED_CLIENTE_NAME",
+		env.SEED_CLIENTE_NAME,
+	);
+	const clienteEmail = requireSeedEnv(
+		"SEED_CLIENTE_EMAIL",
+		env.SEED_CLIENTE_EMAIL,
+	);
+	const clientePassword = requireSeedEnv(
+		"SEED_CLIENTE_PASSWORD",
+		env.SEED_CLIENTE_PASSWORD,
+	);
+
+	const planId = await ensurePlanBasico();
+	const companyId = await ensureHeliosCompany(planId);
 
 	await ensureUser({
-		name: "Super",
-		email: "super@admin.com",
-		password: "123456",
+		name: superName,
+		email: superEmail,
+		password: superPassword,
 		perfil: "super",
 		companyId: null,
 	});
 
-	const planId = await ensurePlanBasico();
-	const companyId = await ensureEmpresaDemo(planId);
-
 	const adminUserId = await ensureUser({
-		name: "Administrador",
-		email: "admin@empresa.com",
-		password: "123456",
+		name: adminName,
+		email: adminEmail,
+		password: adminPassword,
 		perfil: "admin_empresa",
 		companyId,
 		department: "Administração",
-		lastAccessAt: new Date(),
 	});
 
 	if (!adminUserId) {
@@ -576,94 +420,16 @@ async function main() {
 	}
 
 	await ensureUser({
-		name: "Administrador 2",
-		email: "admin2@empresa.com",
-		password: "123456",
-		perfil: "admin_empresa",
+		name: clienteName,
+		email: clienteEmail,
+		password: clientePassword,
+		perfil: "cliente",
 		companyId,
-		department: "Administração",
-		lastAccessAt: new Date(),
+		department: "Operações",
 	});
 
-	const demoMembers = [
-		{
-			name: "Ana Costa",
-			email: "ana.costa@empresademo.com",
-			department: USER_DEPARTMENTS[0],
-			lastAccessAt: await daysAgo(2),
-		},
-		{
-			name: "Bruno Lima",
-			email: "bruno.lima@empresademo.com",
-			department: USER_DEPARTMENTS[1],
-			lastAccessAt: await daysAgo(1),
-		},
-		{
-			name: "Carla Souza",
-			email: "carla.souza@empresademo.com",
-			department: USER_DEPARTMENTS[2],
-			lastAccessAt: await daysAgo(5),
-		},
-		{
-			name: "Diego Alves",
-			email: "diego.alves@empresademo.com",
-			department: USER_DEPARTMENTS[3],
-			lastAccessAt: await daysAgo(3),
-		},
-		{
-			name: "Elena Martins",
-			email: "elena.martins@empresademo.com",
-			department: USER_DEPARTMENTS[4],
-			lastAccessAt: await daysAgo(40),
-		},
-		{
-			name: "Felipe Rocha",
-			email: "felipe.rocha@empresademo.com",
-			department: USER_DEPARTMENTS[0],
-			lastAccessAt: await daysAgo(20),
-			blocked: true,
-		},
-		{
-			name: "Gina Pereira",
-			email: "gina.pereira@empresademo.com",
-			department: USER_DEPARTMENTS[5],
-			lastAccessAt: await daysAgo(18),
-		},
-		{
-			name: "Hugo Nunes",
-			email: "hugo.nunes@empresademo.com",
-			department: USER_DEPARTMENTS[3],
-			lastAccessAt: await daysAgo(45),
-		},
-	];
-
-	const memberIds: string[] = [];
-	for (const member of demoMembers) {
-		const id = await ensureUser({
-			name: member.name,
-			email: member.email,
-			password: "123456",
-			perfil: "cliente",
-			companyId,
-			department: member.department,
-			blocked: member.blocked ?? false,
-			lastAccessAt: member.lastAccessAt,
-		});
-		if (id) memberIds.push(id);
-	}
-
-	// crescimento: alguns usuários criados no mês passado
-	const lastMonth = await daysAgo(35);
-	await db
-		.update(user)
-		.set({ createdAt: lastMonth, updatedAt: lastMonth })
-		.where(
-			and(eq(user.companyId, companyId), eq(user.email, "hugo.nunes@empresademo.com")),
-		);
-
-	await seedCompanyDashboardData(companyId, adminUserId, memberIds);
-	await seedModulePermissions(memberIds);
-	await seedDemoClients(companyId, adminUserId);
+	await ensureHeliosClient(companyId, adminUserId);
+	await ensureFinanceiroBase(companyId, adminUserId);
 
 	console.log("Seed: concluído.");
 	process.exit(0);

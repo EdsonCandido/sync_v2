@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
 	boolean,
+	customType,
 	integer,
 	pgTable,
 	text,
@@ -12,6 +13,12 @@ import { user } from "./auth";
 import { clients } from "./clients";
 import { idColumn, softDeleteColumns } from "./columns";
 import { companies } from "./companies";
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+	dataType() {
+		return "bytea";
+	},
+});
 
 export const kanbanColumns = pgTable(
 	"kanban_columns",
@@ -128,6 +135,19 @@ export const kanbanCardHistory = pgTable("kanban_card_history", {
 	...softDeleteColumns,
 });
 
+export const kanbanCardAttachments = pgTable("kanban_card_attachments", {
+	id: idColumn(),
+	cardId: uuid("card_id")
+		.notNull()
+		.references(() => kanbanCards.id),
+	originalName: text("original_name").notNull(),
+	mimeType: text("mime_type").notNull(),
+	sizeBytes: integer("size_bytes").notNull(),
+	content: bytea("content").notNull(),
+	uploadedBy: uuid("uploaded_by").references(() => user.id),
+	...softDeleteColumns,
+});
+
 export const kanbanColumnsRelations = relations(
 	kanbanColumns,
 	({ one, many }) => ({
@@ -156,6 +176,7 @@ export const kanbanCardsRelations = relations(kanbanCards, ({ one, many }) => ({
 	checklistItems: many(kanbanCardChecklistItems),
 	history: many(kanbanCardHistory),
 	cardTags: many(kanbanCardTags),
+	attachments: many(kanbanCardAttachments),
 }));
 
 export const kanbanTagsRelations = relations(kanbanTags, ({ one, many }) => ({
@@ -210,6 +231,20 @@ export const kanbanCardHistoryRelations = relations(
 		}),
 		user: one(user, {
 			fields: [kanbanCardHistory.userId],
+			references: [user.id],
+		}),
+	}),
+);
+
+export const kanbanCardAttachmentsRelations = relations(
+	kanbanCardAttachments,
+	({ one }) => ({
+		card: one(kanbanCards, {
+			fields: [kanbanCardAttachments.cardId],
+			references: [kanbanCards.id],
+		}),
+		uploader: one(user, {
+			fields: [kanbanCardAttachments.uploadedBy],
 			references: [user.id],
 		}),
 	}),

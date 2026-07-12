@@ -14,10 +14,9 @@ export class LookupCepService {
 		const timer = setTimeout(() => controller.abort(), VIA_CEP_TIMEOUT_MS);
 
 		try {
-			const response = await fetch(
-				`https://viacep.com.br/ws/${cep}/json/`,
-				{ signal: controller.signal },
-			);
+			const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, {
+				signal: controller.signal,
+			});
 
 			if (!response.ok) {
 				throw new AppError(502, "Erro ao consultar CEP.");

@@ -1,6 +1,6 @@
 import { Box } from "@chakra-ui/react";
-import { useEffect, useRef } from "react";
 import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
+import { useEffect, useRef } from "react";
 
 type CompanyMapProps = {
 	latitude: number;
@@ -22,12 +22,15 @@ export function CompanyMap({ latitude, longitude, label }: CompanyMapProps) {
 			const L = (await import("leaflet")).default;
 			await import("leaflet/dist/leaflet.css");
 
-			const [{ default: iconUrl }, { default: iconRetinaUrl }, { default: shadowUrl }] =
-				await Promise.all([
-					import("leaflet/dist/images/marker-icon.png"),
-					import("leaflet/dist/images/marker-icon-2x.png"),
-					import("leaflet/dist/images/marker-shadow.png"),
-				]);
+			const [
+				{ default: iconUrl },
+				{ default: iconRetinaUrl },
+				{ default: shadowUrl },
+			] = await Promise.all([
+				import("leaflet/dist/images/marker-icon.png"),
+				import("leaflet/dist/images/marker-icon-2x.png"),
+				import("leaflet/dist/images/marker-shadow.png"),
+			]);
 
 			if (cancelled || !containerRef.current) return;
 

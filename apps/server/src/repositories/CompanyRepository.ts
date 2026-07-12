@@ -1,4 +1,7 @@
-import type { CreateCompanyInput, UpdateCompanyInput } from "@sync_v2/contracts";
+import type {
+	CreateCompanyInput,
+	UpdateCompanyInput,
+} from "@sync_v2/contracts";
 import { db } from "@sync_v2/db";
 import { companies } from "@sync_v2/db/schema/companies";
 import { plans } from "@sync_v2/db/schema/plans";

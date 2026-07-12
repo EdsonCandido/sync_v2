@@ -5,12 +5,12 @@ import { CompanyAdminDashboard } from "@/components/company-dashboard/CompanyAdm
 import { DashboardEmptyState } from "@/components/company-dashboard/DashboardEmptyState";
 import { DashboardErrorState } from "@/components/company-dashboard/DashboardErrorState";
 import { DashboardSkeleton } from "@/components/company-dashboard/DashboardSkeleton";
+import { ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import {
 	type CompanyDashboard,
 	fetchCompanyDashboard,
 } from "@/lib/company-dashboard-api";
-import { ApiError } from "@/lib/api";
 
 function WelcomeHome({ name }: { name: string }) {
 	return (
@@ -78,9 +78,7 @@ export default function DashboardHome() {
 		} catch (err) {
 			setData(null);
 			setError(
-				err instanceof ApiError
-					? err.message
-					: "Erro ao carregar o dashboard.",
+				err instanceof ApiError ? err.message : "Erro ao carregar o dashboard.",
 			);
 		} finally {
 			setLoading(false);

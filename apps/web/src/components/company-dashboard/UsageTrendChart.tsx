@@ -1,5 +1,5 @@
-import { Box, Heading, Text } from "@chakra-ui/react";
 import { Chart, useChart } from "@chakra-ui/charts";
+import { Box, Heading, Text } from "@chakra-ui/react";
 import {
 	Area,
 	AreaChart,
@@ -78,10 +78,7 @@ export function UsageTrendChart({ data }: UsageTrendChartProps) {
 									width={32}
 									allowDecimals={false}
 								/>
-								<Tooltip
-									cursor={false}
-									content={<Chart.Tooltip />}
-								/>
+								<Tooltip cursor={false} content={<Chart.Tooltip />} />
 								{chart.series.map((item) => (
 									<Area
 										key={item.name}

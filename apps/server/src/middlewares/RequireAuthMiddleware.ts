@@ -22,9 +22,7 @@ export class RequireAuthMiddleware {
 	}
 }
 
-function fromNodeHeaders(
-	headers: Request["headers"],
-): Headers {
+function fromNodeHeaders(headers: Request["headers"]): Headers {
 	const result = new Headers();
 	for (const [key, value] of Object.entries(headers)) {
 		if (value === undefined) continue;

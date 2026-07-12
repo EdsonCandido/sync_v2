@@ -113,16 +113,19 @@ export const accessEvents = pgTable(
 	],
 );
 
-export const companyRequestsRelations = relations(companyRequests, ({ one }) => ({
-	company: one(companies, {
-		fields: [companyRequests.companyId],
-		references: [companies.id],
+export const companyRequestsRelations = relations(
+	companyRequests,
+	({ one }) => ({
+		company: one(companies, {
+			fields: [companyRequests.companyId],
+			references: [companies.id],
+		}),
+		requestedBy: one(user, {
+			fields: [companyRequests.requestedByUserId],
+			references: [user.id],
+		}),
 	}),
-	requestedBy: one(user, {
-		fields: [companyRequests.requestedByUserId],
-		references: [user.id],
-	}),
-}));
+);
 
 export const companyActivitiesRelations = relations(
 	companyActivities,

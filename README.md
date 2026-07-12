@@ -61,18 +61,72 @@ import { Button, Stack } from "@chakra-ui/react";
 
 ## Deployment
 
-### Docker Compose
+### Produção (Ubuntu + Nginx Proxy Manager)
 
-- Target: web + server
-- Config: `docker-compose.yml` (app Dockerfiles live in `apps/*/Dockerfile`)
-- Build images: npm run docker:build
-- Start: npm run docker:up
-- Logs: npm run docker:logs
-- Stop: npm run docker:down
+Fluxo: `git pull` + `docker compose up -d --build`. Isolamento: `COMPOSE_PROJECT_NAME=sync_v2` no `.env` da raiz.
 
-Environment variables are read from each app's `.env` file (baked into web builds for public variables) and overridden in `docker-compose.yml` for container networking.
+**Domínios**
 
-For more details, see the guide on [Deploying with Docker Compose](https://www.better-t-stack.dev/docs/guides/docker).
+| Host | Forward NPM |
+|------|-------------|
+| `https://sync.helioslabs.com.br` | `http://<IP-host>:13001` (web) |
+| `https://api.sync.helioslabs.com.br` | `http://<IP-host>:13000` (server) |
+
+DNS: ambos A/CNAME para o IP do servidor. SSL Let's Encrypt no NPM. Websocket on no proxy do web.
+
+**Setup inicial**
+
+```bash
+git clone <repo> /opt/sync_v2
+cd /opt/sync_v2
+cp .env.example .env
+cp apps/server/.env.example apps/server/.env
+cp apps/web/.env.example apps/web/.env
+# editar senhas, BETTER_AUTH_*, CORS_ORIGIN, BETTER_AUTH_URL, VITE_SERVER_URL, SEED_*
+# produção tipica:
+#   COMPOSE_PROJECT_NAME=sync_v2
+#   VITE_SERVER_URL=https://api.sync.helioslabs.com.br
+#   SEED_ON_START=true
+#   apps/server: BETTER_AUTH_URL=https://api.sync.helioslabs.com.br
+#                CORS_ORIGIN=https://sync.helioslabs.com.br
+
+docker compose up -d --build
+docker compose exec server sh -c 'cd /app && npm run db:push'
+# se seed rodou antes do schema: docker compose restart server
+```
+
+**Deploy recorrente**
+
+```bash
+cd /opt/sync_v2
+git pull
+docker compose up -d --build
+# se schema mudou:
+docker compose exec server sh -c 'cd /app && npm run db:push'
+```
+
+**Seed**
+
+- Com `SEED_ON_START=true`, o entrypoint do `server` roda o bootstrap Helios antes da API (idempotente).
+- Manual: `docker compose exec server sh -c 'cd /app && npm run db:seed -w server'`
+- Cria: plano básico, empresa/cliente Helios, 3 usuários (`super` / `admin_empresa` / `cliente`), categorias, centros de custo, 1 banco.
+- Variáveis: ver `apps/server/.env.example`.
+
+**Portas / conflito**
+
+Portas host padrão: web `13001`, API `13000`, Postgres `15432` (evita conflito com 3000/3001/5432). Override via `.env`: `WEB_HOST_PORT`, `SERVER_HOST_PORT`, `POSTGRES_HOST_PORT`.
+
+Postgres publica só em `127.0.0.1` (não na internet).
+
+### Docker Compose (dev)
+
+- Config: `docker-compose.yml` (Dockerfiles em `apps/*/Dockerfile`)
+- Build: `npm run docker:build`
+- Start: `npm run docker:up`
+- Logs: `npm run docker:logs`
+- Stop: `npm run docker:down`
+
+Envs: `.env` na raiz + `apps/server/.env` + `apps/web/.env`. `VITE_*` é bake no build do web — mudou URL da API? Rebuild do `web`.
 
 ## Git Hooks and Formatting
 

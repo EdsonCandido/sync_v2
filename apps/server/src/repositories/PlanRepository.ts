@@ -1,10 +1,7 @@
+import type { CreatePlanInput, UpdatePlanInput } from "@sync_v2/contracts";
 import { db } from "@sync_v2/db";
 import { companies } from "@sync_v2/db/schema/companies";
 import { plans } from "@sync_v2/db/schema/plans";
-import type {
-	CreatePlanInput,
-	UpdatePlanInput,
-} from "@sync_v2/contracts";
 import { and, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 export class PlanRepository {
@@ -121,9 +118,7 @@ export class PlanRepository {
 		const [row] = await db
 			.select({ value: count() })
 			.from(companies)
-			.where(
-				and(eq(companies.planId, planId), eq(companies.ativo, true)),
-			);
+			.where(and(eq(companies.planId, planId), eq(companies.ativo, true)));
 		return row?.value ?? 0;
 	}
 }
