@@ -65,14 +65,16 @@ import { Button, Stack } from "@chakra-ui/react";
 
 Fluxo: `git pull` + `docker compose up -d --build`. Isolamento: `COMPOSE_PROJECT_NAME=sync_v2` no `.env` da raiz.
 
-**Domínios**
+Pré-requisito: Docker network externa `proxy` (mesma do Nginx Proxy Manager). `web` e `server` entram nela; Postgres fica só na network interna do compose.
+
+**Domínios (NPM — nome do container + porta interna)**
 
 | Host | Forward NPM |
 |------|-------------|
-| `https://sync.helioslabs.com.br` | `http://<IP-host>:13001` (web) |
-| `https://api.sync.helioslabs.com.br` | `http://<IP-host>:13000` (server) |
+| `https://sync.helioslabs.com.br` | `http://sync_v2-web:3001` |
+| `https://api.sync.helioslabs.com.br` | `http://sync_v2-server:3000` |
 
-DNS: ambos A/CNAME para o IP do servidor. SSL Let's Encrypt no NPM. Websocket on no proxy do web.
+DNS: ambos A/CNAME para o IP do servidor. SSL Let's Encrypt no NPM. Websocket on no proxy do web. Portas host `13001`/`13000` só para debug (`curl`); NPM não precisa delas.
 
 **Setup inicial**
 
@@ -91,7 +93,8 @@ cp apps/web/.env.example apps/web/.env
 #                CORS_ORIGIN=https://sync.helioslabs.com.br
 
 docker compose up -d --build
-docker compose exec server sh -c 'cd /app && npm run db:push'
+# db:push via packages/db (Turbo na raiz esvazia DATABASE_URL)
+docker compose exec server sh -c 'cd /app/packages/db && npm run db:push'
 # se seed rodou antes do schema: docker compose restart server
 ```
 
@@ -102,7 +105,7 @@ cd /opt/sync_v2
 git pull
 docker compose up -d --build
 # se schema mudou:
-docker compose exec server sh -c 'cd /app && npm run db:push'
+docker compose exec server sh -c 'cd /app/packages/db && npm run db:push'
 ```
 
 **Seed**

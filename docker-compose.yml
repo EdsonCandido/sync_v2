@@ -7,6 +7,7 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         VITE_SERVER_URL: ${VITE_SERVER_URL:-http://localhost:3000}
+    container_name: sync_v2-web
     init: true
     ports:
       - "${WEB_HOST_PORT:-13001}:3001"
@@ -29,11 +30,15 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - default
+      - proxy
 
   server:
     build:
       context: .
       dockerfile: apps/server/Dockerfile
+    container_name: sync_v2-server
     init: true
     ports:
       - "${SERVER_HOST_PORT:-13000}:3000"
@@ -59,6 +64,9 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - default
+      - proxy
 
   postgres:
     image: postgres:18
@@ -80,3 +88,7 @@ services:
 
 volumes:
   sync_v2_postgres_data:
+
+networks:
+  proxy:
+    external: true
