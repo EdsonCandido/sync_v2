@@ -168,6 +168,57 @@ export type FinanceiroDashboard = {
 	inadimplenciaSplit: { emDia: number; vencido: number };
 };
 
+export type FinanceiroReportListItem = {
+	slug: string;
+	title: string;
+};
+
+export type FinanceiroReportParams = {
+	from?: string;
+	to?: string;
+	bankAccountId?: string;
+};
+
+export type FinanceiroReport = {
+	meta: {
+		slug: string;
+		title: string;
+		from: string;
+		to: string;
+	};
+	kpis: Array<{
+		label: string;
+		value: number;
+		format?: "money" | "number" | "percent";
+	}>;
+	columns: Array<{
+		key: string;
+		label: string;
+		align?: "left" | "right";
+		format?: "text" | "money" | "date" | "number";
+	}>;
+	rows: Array<Record<string, string | number | null>>;
+	series?: Array<{
+		date: string;
+		entradasRealizadas?: number;
+		saidasRealizadas?: number;
+		entradasPrevistas?: number;
+		saidasPrevistas?: number;
+		saldoAcumulado?: number;
+		receitas?: number;
+		despesas?: number;
+	}>;
+	aging?: Array<{
+		bucket: string;
+		quantidade: number;
+		valor: number;
+	}>;
+	bankAccountId?: string;
+	bankAccountLabel?: string;
+	saldoInicial?: number;
+	saldoFinal?: number;
+};
+
 export type ListResult<T> = {
 	items: T[];
 	total: number;
@@ -209,6 +260,50 @@ function qs(params: Record<string, string | number | undefined>) {
 
 export const financeiroApi = {
 	dashboard: () => apiFetch<FinanceiroDashboard>("/api/financeiro/dashboard"),
+
+	downloadSaudeFinanceiraPdf: async () => {
+		const { blob, filename } = await apiFetchBlob(
+			"/api/financeiro/relatorios/saude-financeira.pdf",
+		);
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download =
+			filename ||
+			`saude-financeira-${new Date().toISOString().slice(0, 10)}.pdf`;
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		URL.revokeObjectURL(url);
+	},
+
+	listRelatorios: () =>
+		apiFetch<{ items: FinanceiroReportListItem[] }>(
+			"/api/financeiro/relatorios",
+		),
+
+	getRelatorio: (slug: string, params: FinanceiroReportParams = {}) =>
+		apiFetch<FinanceiroReport>(
+			`/api/financeiro/relatorios/${slug}${qs(params)}`,
+		),
+
+	downloadRelatorioPdf: async (
+		slug: string,
+		params: FinanceiroReportParams = {},
+	) => {
+		const { blob, filename } = await apiFetchBlob(
+			`/api/financeiro/relatorios/${slug}/pdf${qs(params)}`,
+		);
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download =
+			filename || `${slug}-${new Date().toISOString().slice(0, 10)}.pdf`;
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		URL.revokeObjectURL(url);
+	},
 
 	listCategorias: (
 		params: {

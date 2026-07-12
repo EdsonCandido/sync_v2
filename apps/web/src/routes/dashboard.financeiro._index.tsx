@@ -1,6 +1,7 @@
 import { Chart, useChart } from "@chakra-ui/charts";
 import {
 	Box,
+	Button,
 	Flex,
 	Grid,
 	Heading,
@@ -13,6 +14,7 @@ import {
 	LuBanknote,
 	LuCircleDollarSign,
 	LuClock,
+	LuDownload,
 	LuTrendingUp,
 	LuWallet,
 } from "react-icons/lu";
@@ -55,6 +57,8 @@ const PIE_COLORS = [
 export default function FinanceiroDashboardPage() {
 	const [data, setData] = useState<FinanceiroDashboard | null>(null);
 	const [loading, setLoading] = useState(true);
+	const [downloadingPdf, setDownloadingPdf] = useState(false);
+
 	useEffect(() => {
 		void (async () => {
 			try {
@@ -73,6 +77,19 @@ export default function FinanceiroDashboardPage() {
 		})();
 	}, []);
 
+	async function handleDownloadPdf() {
+		try {
+			setDownloadingPdf(true);
+			await financeiroApi.downloadSaudeFinanceiraPdf();
+		} catch (error) {
+			toaster.create({
+				title: error instanceof ApiError ? error.message : "Erro ao baixar PDF",
+				type: "error",
+			});
+		} finally {
+			setDownloadingPdf(false);
+		}
+	}
 
 	if (loading) {
 		return (
@@ -108,6 +125,17 @@ export default function FinanceiroDashboardPage() {
 					</Heading>
 					<Text color="fg.muted">Indicadores e visão consolidada do mês</Text>
 				</Box>
+				<Button
+					colorPalette="blue"
+					variant="solid"
+					onClick={() => void handleDownloadPdf()}
+					loading={downloadingPdf}
+					disabled={downloadingPdf}
+					alignSelf={{ base: "stretch", md: "flex-start" }}
+				>
+					<LuDownload />
+					Baixar PDF
+				</Button>
 			</Flex>
 
 			<Grid

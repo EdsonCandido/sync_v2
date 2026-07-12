@@ -2,6 +2,7 @@ import { Router } from "express";
 import { BankAccountController } from "../controllers/BankAccountController";
 import { CostCenterController } from "../controllers/CostCenterController";
 import { FinanceiroDashboardController } from "../controllers/FinanceiroDashboardController";
+import { FinanceiroReportController } from "../controllers/FinanceiroReportController";
 import { FinancialCategoryController } from "../controllers/FinancialCategoryController";
 import { FinancialEntryController } from "../controllers/FinancialEntryController";
 import { SupplierController } from "../controllers/SupplierController";
@@ -10,6 +11,7 @@ import { requireAuth } from "../middlewares/RequireAuthMiddleware";
 import { requireModuleAccess } from "../middlewares/RequireModuleAccessMiddleware";
 
 const dashboardController = new FinanceiroDashboardController();
+const reportController = new FinanceiroReportController();
 const categoryController = new FinancialCategoryController();
 const costCenterController = new CostCenterController();
 const bankAccountController = new BankAccountController();
@@ -24,6 +26,22 @@ export const financeiroRoutes = Router();
 financeiroRoutes.use((req, res, next) => requireAuth.handle(req, res, next));
 
 financeiroRoutes.get("/dashboard", readAccess.handle, dashboardController.get);
+financeiroRoutes.get(
+	"/relatorios/saude-financeira.pdf",
+	readAccess.handle,
+	reportController.saudeFinanceiraPdf,
+);
+financeiroRoutes.get("/relatorios", readAccess.handle, reportController.list);
+financeiroRoutes.get(
+	"/relatorios/:slug/pdf",
+	readAccess.handle,
+	reportController.pdf,
+);
+financeiroRoutes.get(
+	"/relatorios/:slug",
+	readAccess.handle,
+	reportController.get,
+);
 
 financeiroRoutes.get("/categorias", readAccess.handle, categoryController.list);
 financeiroRoutes.get(

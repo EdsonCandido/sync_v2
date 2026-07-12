@@ -11,6 +11,7 @@ const LINKS = [
 	{ to: "/dashboard/financeiro/centros-de-custo", label: "Centros" },
 	{ to: "/dashboard/financeiro/bancos", label: "Bancos" },
 	{ to: "/dashboard/financeiro/fornecedores", label: "Fornecedores" },
+	{ to: "/dashboard/financeiro/relatorios", label: "Relatórios" },
 ];
 
 export default function DashboardFinanceiroLayout() {
