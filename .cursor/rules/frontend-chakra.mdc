@@ -1,0 +1,15 @@
+---
+description: Frontend web — sempre usar skill chakra-ui-builder para UI
+globs: apps/web/**/*.{tsx,ts}
+alwaysApply: false
+---
+
+# Frontend Chakra UI
+
+Antes de criar ou alterar UI em `apps/web`:
+
+1. Ler e seguir `.agents/skills/chakra-ui-builder/SKILL.md`.
+2. Usar Chakra UI v3 (`@chakra-ui/react`), tokens semânticos, `Field.Root` em forms.
+3. Provider existente em `apps/web/src/components/ui/provider.tsx` — não duplicar.
+4. Layout responsivo no mínimo `base` + `md`.
+5. Não introduzir outra lib de componentes sem justificativa na tarefa.

@@ -1,0 +1,19 @@
+---
+description: Criar tarefa em tasks/ antes de features; seguir AGENTS.md e skills
+alwaysApply: true
+---
+
+# Create task
+
+Antes de feature/bug multi-arquivo:
+
+1. Ler `AGENTS.md`.
+2. Criar `tasks/YYYYMMDD-slug.md` a partir de `tasks/TEMPLATE.md`.
+3. Ler skill `.agents/skills/create-task/SKILL.md`.
+4. Listar skills necessárias; se houver UI, ler `chakra-ui-builder` primeiro.
+5. Implementar só o checklist da tarefa; marcar progresso.
+
+Desvio de arquitetura só com justificativa no arquivo da tarefa.
+
+Soft-delete: toda tabela `ativo` + `created_at` + `updated_at`; nunca hard-delete.
+IDs: toda PK/FK em UUID; proibido serial/sequencial.

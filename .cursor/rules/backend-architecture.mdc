@@ -1,0 +1,49 @@
+---
+description: Arquitetura Express — classes Controller/Service/Repository, fluxo e nomenclatura
+globs: apps/server/**/*
+alwaysApply: false
+---
+
+# Backend architecture
+
+Fluxo: **Route → Controller → Service → Repository → Drizzle**.
+
+Pastas em `apps/server/src`: `config/`, `controllers/`, `middlewares/`, `repositories/`, `routes/`, `services/`, `utils/`, mais `app.ts`, `server.ts`, `index.ts`.
+
+## Classes e nomes
+
+- Controllers, Services, Repositories = **classes** (não funções soltas).
+- Arquivo = classe: `ClientController.ts`, `ClientRepository.ts`, `CreateClientService.ts`, `FindClientService.ts`, `UpdateClientService.ts`, `SoftDeleteClientService.ts`.
+- 1 Service = 1 caso de uso. 1 arquivo = 1 responsabilidade.
+
+## Camadas
+
+- Controller: Request → Service → Response. Sem DB, SQL, Drizzle, negócio.
+- Service: regra de negócio. Sem Drizzle direto.
+- Repository: só dados via Drizzle. Sem regra de negócio.
+- Rotas: `*.routes.ts` por módulo; `routes/index.ts` registra tudo.
+- Middlewares: só em `middlewares/`.
+
+## Packages
+
+Sem regra de negócio em `packages/*`. Schema/client em `packages/db`; DTOs/tipos em `contracts`/`types`.
+
+## Soft-delete (obrigatório)
+
+- Proibido hard-delete (`DELETE` / `db.delete()`) em Repositories e Services.
+- Exclusão = `ativo = false` + `updated_at` (e `updated_by` se existir).
+- Toda tabela: `id` (uuid PK), `ativo` (bool, default true), `created_at`, `updated_at`.
+- Helpers: `idColumn()`, `softDeleteColumns` em `packages/db/src/schema/columns.ts`.
+- Listagens de domínio: filtrar `ativo = true` por padrão.
+- Service: `SoftDeleteXService.ts` — nunca hard delete.
+- Desvio só com justificativa na tarefa em `tasks/`.
+
+## IDs (obrigatório: UUID)
+
+- Proibido `serial`, `bigserial`, autoincrement ou ID sequencial numérico.
+- PK: `uuid("id").defaultRandom().primaryKey()` via `idColumn()`.
+- FKs: tipo `uuid`.
+- Inserts manuais: `createId()` de `@sync_v2/utils`.
+- Better Auth: `advanced.database.generateId: "uuid"` (nunca `"serial"`).
+
+Nunca gerar código fora deste padrão sem justificativa técnica clara na tarefa em `tasks/`.

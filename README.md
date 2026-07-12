@@ -6,8 +6,7 @@ This project was created with [Better-T-Stack](https://github.com/AmanVarshney01
 
 - **TypeScript** - For type safety and improved developer experience
 - **React Router** - Declarative routing for React
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
+- **Chakra UI** - Accessible component library for the web UI
 - **Express** - Fast, unopinionated web framework
 - **Node.js** - Runtime environment
 - **Drizzle** - TypeScript-first ORM
@@ -37,6 +36,12 @@ This project uses PostgreSQL with Drizzle ORM.
 npm run db:push
 ```
 
+Seed do usuário super (preencha `SEED_SUPER_*` em `apps/server/.env` — veja `.env.example`):
+
+```bash
+npm run db:seed
+```
+
 Then, run the development server:
 
 ```bash
@@ -46,31 +51,13 @@ npm run dev
 Open [http://localhost:5173](http://localhost:5173) in your browser to see the web application.
 The API is running at [http://localhost:3000](http://localhost:3000).
 
-## UI Customization
+## UI
 
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
-
-Import shared components like this:
+The web app uses [Chakra UI v3](https://chakra-ui.com/). Provider, toaster, and color-mode helpers live in `apps/web/src/components/ui/`.
 
 ```tsx
-import { Button } from "@sync_v2/ui/components/button";
+import { Button, Stack } from "@chakra-ui/react";
 ```
-
-### Add app-specific blocks
-
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
 
 ## Deployment
 
@@ -96,13 +83,28 @@ For more details, see the guide on [Deploying with Docker Compose](https://www.b
 ```
 sync_v2/
 ├── apps/
-│   ├── web/         # Frontend application (React + React Router)
-│   └── server/      # Backend API (Express)
+│   ├── web/         # Frontend (React + React Router + Chakra UI)
+│   └── server/      # Backend API (Express) — business rules live here
 ├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
+│   ├── auth/        # Better Auth config (no domain business rules)
+│   ├── config/      # Shared tooling / tsconfig
+│   ├── db/          # Drizzle schema + client (no business rules)
+│   ├── contracts/   # Shared API DTOs / schemas
+│   ├── types/       # Shared types
+│   ├── utils/       # Pure shared helpers
+│   └── env/         # Environment variables
+├── tasks/           # Agent work specs
+└── AGENTS.md        # Architecture rules and task workflow
 ```
+
+Server (`apps/server/src`): Controller → Service → Repository → Drizzle. See [AGENTS.md](AGENTS.md).
+
+### Agent / tasks
+
+- Guide: [AGENTS.md](AGENTS.md)
+- Create a task: copy [tasks/TEMPLATE.md](tasks/TEMPLATE.md) → `tasks/YYYYMMDD-slug.md`
+- Skill: `.agents/skills/create-task/SKILL.md`
+- UI work: always use the `chakra-ui-builder` skill
 
 ## Available Scripts
 
@@ -114,7 +116,7 @@ sync_v2/
 - `npm run db:push`: Push schema changes to database
 - `npm run db:generate`: Generate database client/types
 - `npm run db:migrate`: Run database migrations
-- `npm run db:studio`: Open database studio UI
+- `npm run db:studio`: Open database studio
 - `npm run check`: Run Biome formatting and linting
 - `npm run docker:build`: Build the Docker Compose images
 - `npm run docker:up`: Build and start the Docker Compose stack

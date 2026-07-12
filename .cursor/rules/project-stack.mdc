@@ -1,0 +1,17 @@
+---
+description: Stack e estrutura do monorepo sync_v2 — apps vs packages, sem regra de negócio em packages
+alwaysApply: true
+---
+
+# Project stack
+
+- Monorepo: `apps/server` (Express), `apps/web` (React + Chakra UI v3), packages em `packages/`.
+- DB: PostgreSQL + Drizzle em `packages/db`. Auth config em `packages/auth`.
+- Packages alvo: `auth`, `config`, `db`, `contracts`, `types`, `utils`. `env` = infra de env.
+- Código reutilizável → `packages/`. Apps → `apps/`.
+- **Nenhuma regra de negócio** em `packages/*`. Negócio só em `apps/server/src` (Services).
+- **Soft-delete:** toda tabela tem `ativo`, `created_at`, `updated_at`. Nunca hard-delete na app.
+- **IDs:** toda PK/FK usa UUID (`uuid` + `defaultRandom` / `createId()`). Proibido serial/sequencial.
+- Frontend UI: ler skill `chakra-ui-builder` antes de componentes.
+- Lint/format: Biome (`npm run check`). Builds: Turborepo.
+- Não inventar libs/stack paralelo sem justificativa na tarefa em `tasks/`.
