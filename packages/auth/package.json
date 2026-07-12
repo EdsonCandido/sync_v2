@@ -1,24 +1,24 @@
 {
-  "name": "@sync_v2/auth",
-  "type": "module",
-  "exports": {
-    ".": {
-      "default": "./src/index.ts"
-    },
-    "./*": {
-      "default": "./src/*.ts"
-    }
-  },
-  "scripts": {},
-  "dependencies": {
-    "@sync_v2/db": "*",
-    "@sync_v2/env": "*",
-    "better-auth": "1.6.23",
-    "dotenv": "^17.4.2",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@sync_v2/config": "*",
-    "typescript": "^6"
-  }
+	"name": "@sync_v2/auth",
+	"type": "module",
+	"exports": {
+		".": {
+			"default": "./src/index.ts"
+		},
+		"./*": {
+			"default": "./src/*.ts"
+		}
+	},
+	"scripts": {},
+	"dependencies": {
+		"@sync_v2/db": "*",
+		"@sync_v2/env": "*",
+		"better-auth": "1.6.23",
+		"dotenv": "^17.4.2",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@sync_v2/config": "*",
+		"typescript": "^6"
+	}
 }
