@@ -1,9 +1,9 @@
-import { Loader2 } from "lucide-react";
+import { Center, Spinner } from "@chakra-ui/react";
 
 export default function Loader() {
-  return (
-    <div className="flex h-full items-center justify-center pt-8">
-      <Loader2 className="animate-spin" />
-    </div>
-  );
+	return (
+		<Center h="full" pt={8}>
+			<Spinner size="lg" />
+		</Center>
+	);
 }

@@ -1,42 +1,46 @@
 {
-  "name": "web",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "react-router build",
-    "dev": "react-router dev",
-    "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
-  },
-  "dependencies": {
-    "@react-router/fs-routes": "^8.1.0",
-    "@react-router/node": "^8.1.0",
-    "@react-router/serve": "^8.1.0",
-    "@sync_v2/env": "*",
-    "@sync_v2/ui": "*",
-    "@tanstack/react-form": "^1.33.0",
-    "better-auth": "1.6.23",
-    "dotenv": "^17.4.2",
-    "isbot": "^5.1.44",
-    "lucide-react": "^1.23.0",
-    "next-themes": "^0.4.6",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "react-router": "^8.1.0",
-    "sonner": "^2.0.7",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@react-router/dev": "^8.1.0",
-    "@sync_v2/config": "*",
-    "@tailwindcss/vite": "^4.3.2",
-    "@types/node": "^22.13.14",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "react-router-devtools": "^6.2.1",
-    "tailwindcss": "^4.3.2",
-    "typescript": "^6",
-    "vite": "^7.3.6",
-    "vite-tsconfig-paths": "^6.1.1"
-  }
+	"name": "web",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "react-router build",
+		"dev": "react-router dev",
+		"start": "react-router-serve ./build/server/index.js",
+		"typecheck": "react-router typegen && tsc"
+	},
+	"dependencies": {
+		"@chakra-ui/charts": "^3.36.0",
+		"@chakra-ui/react": "^3.36.0",
+		"@emotion/react": "^11.14.0",
+		"@react-router/fs-routes": "^8.1.0",
+		"@react-router/node": "^8.1.0",
+		"@react-router/serve": "^8.1.0",
+		"@sync_v2/contracts": "*",
+		"@sync_v2/env": "*",
+		"@tanstack/react-form": "^1.33.0",
+		"@types/leaflet": "^1.9.21",
+		"better-auth": "1.6.23",
+		"dotenv": "^17.4.2",
+		"framer-motion": "^12.42.2",
+		"isbot": "^5.1.44",
+		"leaflet": "^1.9.4",
+		"next-themes": "^0.4.6",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"react-icons": "^5.7.0",
+		"react-router": "^8.1.0",
+		"recharts": "^3.9.2",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@react-router/dev": "^8.1.0",
+		"@sync_v2/config": "*",
+		"@types/node": "^22.13.14",
+		"@types/react": "^19.2.17",
+		"@types/react-dom": "^19.2.3",
+		"react-router-devtools": "^6.2.1",
+		"typescript": "^6",
+		"vite": "^7.3.6",
+		"vite-tsconfig-paths": "^6.1.1"
+	}
 }

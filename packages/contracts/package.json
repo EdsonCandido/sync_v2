@@ -1,0 +1,20 @@
+{
+	"name": "@sync_v2/contracts",
+	"type": "module",
+	"exports": {
+		".": {
+			"default": "./src/index.ts"
+		},
+		"./*": {
+			"default": "./src/*.ts"
+		}
+	},
+	"scripts": {},
+	"dependencies": {
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@sync_v2/config": "*",
+		"typescript": "^6"
+	}
+}

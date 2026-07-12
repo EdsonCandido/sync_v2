@@ -1,42 +1,43 @@
 {
-  "name": "sync_v2",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "type": "module",
-  "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "check-types": "turbo run check-types",
-    "dev:web": "turbo run dev -F web",
-    "dev:server": "turbo run dev -F server",
-    "db:push": "turbo run db:push -F @sync_v2/db",
-    "db:studio": "turbo run db:studio -F @sync_v2/db",
-    "db:generate": "turbo run db:generate -F @sync_v2/db",
-    "db:migrate": "turbo run db:migrate -F @sync_v2/db",
-    "db:start": "docker compose up -d postgres",
-    "db:watch": "docker compose up postgres",
-    "db:stop": "docker compose stop postgres",
-    "db:down": "docker compose down postgres",
-    "docker:build": "docker compose build",
-    "docker:up": "docker compose up -d --build",
-    "docker:down": "docker compose down",
-    "docker:logs": "docker compose logs -f",
-    "check": "biome check --write ."
-  },
-  "dependencies": {
-    "@sync_v2/env": "*",
-    "dotenv": "^17.4.2",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.5.2",
-    "@sync_v2/config": "*",
-    "@types/node": "^22.13.14",
-    "turbo": "^2.10.2",
-    "typescript": "^6"
-  },
-  "packageManager": "npm@10.9.2"
+	"name": "sync_v2",
+	"private": true,
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"type": "module",
+	"scripts": {
+		"dev": "turbo run dev",
+		"build": "turbo run build",
+		"check-types": "turbo run check-types",
+		"dev:web": "turbo run dev -F web",
+		"dev:server": "turbo run dev -F server",
+		"db:push": "turbo run db:push -F @sync_v2/db",
+		"db:studio": "turbo run db:studio -F @sync_v2/db",
+		"db:generate": "turbo run db:generate -F @sync_v2/db",
+		"db:migrate": "turbo run db:migrate -F @sync_v2/db",
+		"db:seed": "npm run db:seed -w server",
+		"db:start": "docker compose up -d postgres",
+		"db:watch": "docker compose up postgres",
+		"db:stop": "docker compose stop postgres",
+		"db:down": "docker compose down postgres",
+		"docker:build": "docker compose build",
+		"docker:up": "docker compose up -d --build",
+		"docker:down": "docker compose down",
+		"docker:logs": "docker compose logs -f",
+		"check": "biome check --write ."
+	},
+	"dependencies": {
+		"@sync_v2/env": "*",
+		"dotenv": "^17.4.2",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.2",
+		"@sync_v2/config": "*",
+		"@types/node": "^22.13.14",
+		"turbo": "^2.10.2",
+		"typescript": "^6"
+	},
+	"packageManager": "npm@10.9.2"
 }
