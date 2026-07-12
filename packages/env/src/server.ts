@@ -23,10 +23,24 @@ export const env = createEnv({
 		NODE_ENV: z
 			.enum(["development", "production", "test"])
 			.default("development"),
-		/** Credenciais do seed inicial — obrigatórias só ao rodar `db:seed`. */
+		/** Bootstrap Helios — obrigatórios ao rodar `db:seed` / SEED_ON_START. */
 		SEED_SUPER_NAME: z.string().min(1).optional(),
 		SEED_SUPER_EMAIL: z.email().optional(),
 		SEED_SUPER_PASSWORD: z.string().min(8).optional(),
+		SEED_ADMIN_NAME: z.string().min(1).optional(),
+		SEED_ADMIN_EMAIL: z.email().optional(),
+		SEED_ADMIN_PASSWORD: z.string().min(8).optional(),
+		SEED_CLIENTE_NAME: z.string().min(1).optional(),
+		SEED_CLIENTE_EMAIL: z.email().optional(),
+		SEED_CLIENTE_PASSWORD: z.string().min(8).optional(),
+		SEED_COMPANY_NAME: z.string().min(1).optional(),
+		SEED_COMPANY_DOCUMENT: z.string().min(1).optional(),
+		SEED_COMPANY_EMAIL: z.email().optional(),
+		SEED_CLIENT_NAME: z.string().min(1).optional(),
+		SEED_CLIENT_DOCUMENT: z.string().min(1).optional(),
+		SEED_BANK_NAME: z.string().min(1).optional(),
+		SEED_BANK_AGENCIA: z.string().min(1).optional(),
+		SEED_BANK_CONTA: z.string().min(1).optional(),
 	},
 	runtimeEnv: process.env,
 	skipValidation: !!process.env.SKIP_ENV_VALIDATION,
