@@ -454,6 +454,7 @@ export const kanbanHistoryEventTypeSchema = z.enum([
 	"checklist",
 	"assignees",
 	"tags",
+	"attachment",
 ]);
 
 export type KanbanHistoryEventTypeDto = z.infer<
@@ -570,6 +571,17 @@ export const kanbanHistoryItemSchema = z.object({
 	createdAt: z.coerce.date(),
 });
 
+export const kanbanAttachmentSchema = z.object({
+	id: z.string().uuid(),
+	originalName: z.string(),
+	mimeType: z.string(),
+	sizeBytes: z.number().int(),
+	uploadedBy: z.string().uuid().nullable(),
+	createdAt: z.coerce.date(),
+});
+
+export type KanbanAttachment = z.infer<typeof kanbanAttachmentSchema>;
+
 export const kanbanCardSchema = z.object({
 	id: z.string().uuid(),
 	companyId: z.string().uuid(),
@@ -608,6 +620,7 @@ export type KanbanBoardResponse = z.infer<typeof kanbanBoardResponseSchema>;
 
 export const kanbanCardDetailSchema = kanbanCardSchema.extend({
 	history: z.array(kanbanHistoryItemSchema),
+	attachments: z.array(kanbanAttachmentSchema),
 });
 
 export type KanbanCardDetail = z.infer<typeof kanbanCardDetailSchema>;

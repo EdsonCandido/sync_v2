@@ -79,9 +79,11 @@ export const KANBAN_HISTORY_EVENT_TYPES = [
 	"checklist",
 	"assignees",
 	"tags",
+	"attachment",
 ] as const;
 
-export type KanbanHistoryEventType = (typeof KANBAN_HISTORY_EVENT_TYPES)[number];
+export type KanbanHistoryEventType =
+	(typeof KANBAN_HISTORY_EVENT_TYPES)[number];
 
 export const KANBAN_TAG_COLORS = [
 	"gray",

@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, apiFetchBlob } from "./api";
 
 export type KanbanAssignee = {
 	userId: string;
@@ -22,6 +22,15 @@ export type KanbanChecklistItem = {
 	updatedAt: string;
 };
 
+export type KanbanAttachment = {
+	id: string;
+	originalName: string;
+	mimeType: string;
+	sizeBytes: number;
+	uploadedBy: string | null;
+	createdAt: string;
+};
+
 export type KanbanHistoryItem = {
 	id: string;
 	eventType:
@@ -31,7 +40,8 @@ export type KanbanHistoryItem = {
 		| "observation"
 		| "checklist"
 		| "assignees"
-		| "tags";
+		| "tags"
+		| "attachment";
 	message: string;
 	userId: string | null;
 	userName: string | null;
@@ -61,6 +71,7 @@ export type KanbanCard = {
 
 export type KanbanCardDetail = KanbanCard & {
 	history: KanbanHistoryItem[];
+	attachments: KanbanAttachment[];
 };
 
 export type KanbanColumn = {
@@ -170,5 +181,23 @@ export const kanbanApi = {
 		apiFetch(`/api/kanban/cards/${cardId}/observations`, {
 			method: "POST",
 			body: JSON.stringify({ message }),
+		}),
+	uploadAttachment: (cardId: string, file: File) => {
+		const body = new FormData();
+		body.append("file", file);
+		return apiFetch<KanbanAttachment>(
+			`/api/kanban/cards/${cardId}/attachments`,
+			{ method: "POST", body },
+		);
+	},
+	downloadAttachment: async (cardId: string, attachmentId: string) => {
+		const { blob, filename } = await apiFetchBlob(
+			`/api/kanban/cards/${cardId}/attachments/${attachmentId}/download`,
+		);
+		return { blob, filename };
+	},
+	removeAttachment: (cardId: string, attachmentId: string) =>
+		apiFetch(`/api/kanban/cards/${cardId}/attachments/${attachmentId}`, {
+			method: "DELETE",
 		}),
 };

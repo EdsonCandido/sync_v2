@@ -13,15 +13,18 @@ import { AddKanbanCardObservationService } from "../services/AddKanbanCardObserv
 import { CreateKanbanCardService } from "../services/CreateKanbanCardService";
 import { CreateKanbanChecklistItemService } from "../services/CreateKanbanChecklistItemService";
 import { CreateKanbanColumnService } from "../services/CreateKanbanColumnService";
+import { DownloadKanbanAttachmentService } from "../services/DownloadKanbanAttachmentService";
 import { FindKanbanCardService } from "../services/FindKanbanCardService";
 import { GetKanbanBoardService } from "../services/GetKanbanBoardService";
 import { ListKanbanFilterOptionsService } from "../services/ListKanbanFilterOptionsService";
 import { MoveKanbanCardService } from "../services/MoveKanbanCardService";
+import { SoftDeleteKanbanAttachmentService } from "../services/SoftDeleteKanbanAttachmentService";
 import { SoftDeleteKanbanCardService } from "../services/SoftDeleteKanbanCardService";
 import { SoftDeleteKanbanChecklistItemService } from "../services/SoftDeleteKanbanChecklistItemService";
 import { SoftDeleteKanbanColumnService } from "../services/SoftDeleteKanbanColumnService";
 import { UpdateKanbanCardService } from "../services/UpdateKanbanCardService";
 import { UpdateKanbanChecklistItemService } from "../services/UpdateKanbanChecklistItemService";
+import { UploadKanbanAttachmentService } from "../services/UploadKanbanAttachmentService";
 import { AppError } from "../utils/AppError";
 
 export class KanbanController {
@@ -39,6 +42,9 @@ export class KanbanController {
 		private readonly updateChecklistService = new UpdateKanbanChecklistItemService(),
 		private readonly softDeleteChecklistService = new SoftDeleteKanbanChecklistItemService(),
 		private readonly addObservationService = new AddKanbanCardObservationService(),
+		private readonly uploadAttachmentService = new UploadKanbanAttachmentService(),
+		private readonly downloadAttachmentService = new DownloadKanbanAttachmentService(),
+		private readonly softDeleteAttachmentService = new SoftDeleteKanbanAttachmentService(),
 	) {}
 
 	getBoard = async (req: Request, res: Response) => {
@@ -202,6 +208,65 @@ export class KanbanController {
 			handleError(res, error);
 		}
 	};
+
+	uploadAttachment = async (req: Request, res: Response) => {
+		try {
+			const ctx = requireCompanyContext(req);
+			const cardId = String(req.params.cardId);
+			const file = req.file;
+			if (!file) {
+				throw new AppError(400, "Arquivo obrigatório.");
+			}
+			const attachment = await this.uploadAttachmentService.execute(
+				cardId,
+				file,
+				ctx,
+			);
+			res.status(201).json(attachment);
+		} catch (error) {
+			handleError(res, error);
+		}
+	};
+
+	downloadAttachment = async (req: Request, res: Response) => {
+		try {
+			const ctx = requireCompanyContext(req);
+			const cardId = String(req.params.cardId);
+			const attachmentId = String(req.params.attachmentId);
+			const file = await this.downloadAttachmentService.execute(
+				cardId,
+				attachmentId,
+				ctx,
+			);
+			const encodedName = encodeURIComponent(file.originalName);
+			const asciiName = file.originalName.replace(/[^\x20-\x7E]/g, "_");
+			res.setHeader("Content-Type", file.mimeType);
+			res.setHeader("Content-Length", String(file.sizeBytes));
+			res.setHeader(
+				"Content-Disposition",
+				`attachment; filename="${asciiName}"; filename*=UTF-8''${encodedName}`,
+			);
+			res.send(file.content);
+		} catch (error) {
+			handleError(res, error);
+		}
+	};
+
+	softDeleteAttachment = async (req: Request, res: Response) => {
+		try {
+			const ctx = requireCompanyContext(req);
+			const cardId = String(req.params.cardId);
+			const attachmentId = String(req.params.attachmentId);
+			const attachment = await this.softDeleteAttachmentService.execute(
+				cardId,
+				attachmentId,
+				ctx,
+			);
+			res.json(attachment);
+		} catch (error) {
+			handleError(res, error);
+		}
+	};
 }
 
 function requireCompanyContext(req: Request) {
@@ -217,6 +282,20 @@ function requireCompanyContext(req: Request) {
 function handleError(res: Response, error: unknown) {
 	if (error instanceof AppError) {
 		res.status(error.status).json({ message: error.message });
+		return;
+	}
+	if (
+		error &&
+		typeof error === "object" &&
+		"name" in error &&
+		(error as { name: string }).name === "MulterError"
+	) {
+		const code = (error as { code?: string }).code;
+		if (code === "LIMIT_FILE_SIZE") {
+			res.status(400).json({ message: "Arquivo excede o limite de 10 MB." });
+			return;
+		}
+		res.status(400).json({ message: "Falha no upload do arquivo." });
 		return;
 	}
 	if (
