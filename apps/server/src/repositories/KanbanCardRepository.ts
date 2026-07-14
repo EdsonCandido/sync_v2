@@ -5,6 +5,7 @@ import {
 	kanbanCardAssignees,
 	kanbanCardChecklistItems,
 	kanbanCards,
+	kanbanColumns,
 } from "@sync_v2/db/schema/kanban";
 import { and, asc, eq, inArray, max, notInArray } from "drizzle-orm";
 import { KanbanHistoryRepository } from "./KanbanHistoryRepository";
@@ -52,6 +53,7 @@ export class KanbanCardRepository {
 
 	async listByCompany(params: {
 		companyId: string;
+		boardId?: string;
 		assigneeUserId?: string;
 		clientId?: string;
 		onlyAssigneeUserId?: string;
@@ -67,6 +69,9 @@ export class KanbanCardRepository {
 		if (params.clientId) {
 			conditions.push(eq(kanbanCards.clientId, params.clientId));
 		}
+		if (params.boardId) {
+			conditions.push(eq(kanbanColumns.boardId, params.boardId));
+		}
 
 		let rows = await db
 			.select({
@@ -74,6 +79,7 @@ export class KanbanCardRepository {
 				clientName: clients.name,
 			})
 			.from(kanbanCards)
+			.innerJoin(kanbanColumns, eq(kanbanCards.columnId, kanbanColumns.id))
 			.leftJoin(clients, eq(kanbanCards.clientId, clients.id))
 			.where(and(...conditions))
 			.orderBy(asc(kanbanCards.position), asc(kanbanCards.createdAt));

@@ -1,17 +1,20 @@
 import type { CreateKanbanCardInput } from "@sync_v2/contracts";
 import { ClientRepository } from "../repositories/ClientRepository";
+import { KanbanBoardRepository } from "../repositories/KanbanBoardRepository";
 import { KanbanCardRepository } from "../repositories/KanbanCardRepository";
 import { KanbanColumnRepository } from "../repositories/KanbanColumnRepository";
 import { KanbanHistoryRepository } from "../repositories/KanbanHistoryRepository";
 import { KanbanTagRepository } from "../repositories/KanbanTagRepository";
 import { UserRepository } from "../repositories/UserRepository";
 import { AppError } from "../utils/AppError";
+import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 import { EnsureBaseKanbanColumnsService } from "./EnsureBaseKanbanColumnsService";
 import { syncCardTags } from "./SyncKanbanCardTagsService";
 
 export class CreateKanbanCardService {
 	constructor(
 		private readonly ensureBase = new EnsureBaseKanbanColumnsService(),
+		private readonly boardRepository = new KanbanBoardRepository(),
 		private readonly columnRepository = new KanbanColumnRepository(),
 		private readonly cardRepository = new KanbanCardRepository(),
 		private readonly historyRepository = new KanbanHistoryRepository(),
@@ -24,15 +27,22 @@ export class CreateKanbanCardService {
 		input: CreateKanbanCardInput,
 		params: { companyId: string; userId: string; perfil?: string },
 	) {
-		await this.ensureBase.execute(params.companyId);
-
 		const column = await this.columnRepository.findById(
 			input.columnId,
 			params.companyId,
 		);
-		if (!column) {
+		if (!column?.boardId) {
 			throw new AppError(404, "Coluna não encontrada.");
 		}
+
+		await assertCanAccessKanbanBoard(this.boardRepository, {
+			boardId: column.boardId,
+			companyId: params.companyId,
+			userId: params.userId,
+			perfil: params.perfil ?? "cliente",
+		});
+
+		await this.ensureBase.execute(params.companyId, column.boardId);
 
 		if (input.clientId) {
 			const client = await this.clientRepository.findById(

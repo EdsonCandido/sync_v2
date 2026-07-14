@@ -10,6 +10,21 @@ export const BASE_KANBAN_COLUMNS = [
 ] as const;
 
 export class KanbanColumnRepository {
+	async listByBoard(companyId: string, boardId: string) {
+		return db
+			.select()
+			.from(kanbanColumns)
+			.where(
+				and(
+					eq(kanbanColumns.companyId, companyId),
+					eq(kanbanColumns.boardId, boardId),
+					eq(kanbanColumns.ativo, true),
+				),
+			)
+			.orderBy(asc(kanbanColumns.position));
+	}
+
+	/** @deprecated Use listByBoard */
 	async listByCompany(companyId: string) {
 		return db
 			.select()
@@ -38,15 +53,12 @@ export class KanbanColumnRepository {
 		return row ?? null;
 	}
 
-	async findBySlugAny(companyId: string, slug: string) {
+	async findBySlugAny(boardId: string, slug: string) {
 		const [row] = await db
 			.select()
 			.from(kanbanColumns)
 			.where(
-				and(
-					eq(kanbanColumns.companyId, companyId),
-					eq(kanbanColumns.slug, slug),
-				),
+				and(eq(kanbanColumns.boardId, boardId), eq(kanbanColumns.slug, slug)),
 			)
 			.limit(1);
 		return row ?? null;
@@ -66,13 +78,13 @@ export class KanbanColumnRepository {
 		return row ?? null;
 	}
 
-	async countBase(companyId: string) {
+	async countBase(boardId: string) {
 		const rows = await db
 			.select()
 			.from(kanbanColumns)
 			.where(
 				and(
-					eq(kanbanColumns.companyId, companyId),
+					eq(kanbanColumns.boardId, boardId),
 					eq(kanbanColumns.isBase, true),
 					eq(kanbanColumns.ativo, true),
 				),
@@ -80,9 +92,10 @@ export class KanbanColumnRepository {
 		return rows.length;
 	}
 
-	async insertBaseColumns(companyId: string) {
+	async insertBaseColumns(companyId: string, boardId: string) {
 		const values = BASE_KANBAN_COLUMNS.map((col) => ({
 			companyId,
+			boardId,
 			name: col.name,
 			slug: col.slug,
 			isBase: true,
@@ -91,21 +104,19 @@ export class KanbanColumnRepository {
 		return db.insert(kanbanColumns).values(values).returning();
 	}
 
-	async nextPosition(companyId: string) {
+	async nextPosition(boardId: string) {
 		const [row] = await db
 			.select({ value: max(kanbanColumns.position) })
 			.from(kanbanColumns)
 			.where(
-				and(
-					eq(kanbanColumns.companyId, companyId),
-					eq(kanbanColumns.ativo, true),
-				),
+				and(eq(kanbanColumns.boardId, boardId), eq(kanbanColumns.ativo, true)),
 			);
 		return (row?.value ?? -1) + 1;
 	}
 
 	async create(data: {
 		companyId: string;
+		boardId: string;
 		name: string;
 		slug: string;
 		position: number;
@@ -115,6 +126,7 @@ export class KanbanColumnRepository {
 			.insert(kanbanColumns)
 			.values({
 				companyId: data.companyId,
+				boardId: data.boardId,
 				name: data.name,
 				slug: data.slug,
 				position: data.position,

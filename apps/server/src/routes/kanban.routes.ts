@@ -12,6 +12,15 @@ export const kanbanRoutes = Router();
 
 kanbanRoutes.use((req, res, next) => requireAuth.handle(req, res, next));
 
+kanbanRoutes.get("/boards", readAccess.handle, controller.listBoards);
+kanbanRoutes.post("/boards", editAccess.handle, controller.createBoard);
+kanbanRoutes.put("/boards/:boardId", editAccess.handle, controller.updateBoard);
+kanbanRoutes.delete(
+	"/boards/:boardId",
+	editAccess.handle,
+	controller.softDeleteBoard,
+);
+
 kanbanRoutes.get("/board", readAccess.handle, controller.getBoard);
 kanbanRoutes.get(
 	"/filter-options",

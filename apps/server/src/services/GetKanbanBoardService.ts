@@ -1,8 +1,11 @@
 import type { ListKanbanBoardQuery } from "@sync_v2/contracts";
+import { KanbanBoardRepository } from "../repositories/KanbanBoardRepository";
 import { KanbanCardRepository } from "../repositories/KanbanCardRepository";
 import { KanbanColumnRepository } from "../repositories/KanbanColumnRepository";
 import { AppError } from "../utils/AppError";
+import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 import { EnsureBaseKanbanColumnsService } from "./EnsureBaseKanbanColumnsService";
+import { EnsureDefaultKanbanBoardService } from "./EnsureDefaultKanbanBoardService";
 
 function mapCard(
 	card: Awaited<ReturnType<KanbanCardRepository["listByCompany"]>>[number],
@@ -36,7 +39,9 @@ function mapCard(
 
 export class GetKanbanBoardService {
 	constructor(
+		private readonly ensureDefault = new EnsureDefaultKanbanBoardService(),
 		private readonly ensureBase = new EnsureBaseKanbanColumnsService(),
+		private readonly boardRepository = new KanbanBoardRepository(),
 		private readonly columnRepository = new KanbanColumnRepository(),
 		private readonly cardRepository = new KanbanCardRepository(),
 	) {}
@@ -53,11 +58,24 @@ export class GetKanbanBoardService {
 			throw new AppError(403, "Sem permissão para o Kanban.");
 		}
 
-		await this.ensureBase.execute(params.companyId);
-		const columns = await this.columnRepository.listByCompany(params.companyId);
+		await this.ensureDefault.execute(params.companyId, params.userId);
+
+		await assertCanAccessKanbanBoard(this.boardRepository, {
+			boardId: query.boardId,
+			companyId: params.companyId,
+			userId: params.userId,
+			perfil: params.perfil,
+		});
+
+		await this.ensureBase.execute(params.companyId, query.boardId);
+		const columns = await this.columnRepository.listByBoard(
+			params.companyId,
+			query.boardId,
+		);
 
 		const cards = await this.cardRepository.listByCompany({
 			companyId: params.companyId,
+			boardId: query.boardId,
 			assigneeUserId: query.assigneeUserId,
 			clientId: query.clientId,
 			tagId: query.tagId,
@@ -75,6 +93,7 @@ export class GetKanbanBoardService {
 		}
 
 		return {
+			boardId: query.boardId,
 			columns: columns.map((col) => ({
 				id: col.id,
 				name: col.name,
