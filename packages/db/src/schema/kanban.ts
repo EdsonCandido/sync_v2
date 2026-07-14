@@ -20,6 +20,38 @@ const bytea = customType<{ data: Buffer; driverData: Buffer }>({
 	},
 });
 
+export const kanbanBoards = pgTable("kanban_boards", {
+	id: idColumn(),
+	companyId: uuid("company_id")
+		.notNull()
+		.references(() => companies.id),
+	name: text("name").notNull(),
+	isDefault: boolean("is_default").default(false).notNull(),
+	priority: integer("priority").default(0).notNull(),
+	createdBy: uuid("created_by").references(() => user.id),
+	...softDeleteColumns,
+});
+
+export const kanbanBoardMembers = pgTable(
+	"kanban_board_members",
+	{
+		id: idColumn(),
+		boardId: uuid("board_id")
+			.notNull()
+			.references(() => kanbanBoards.id),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => user.id),
+		...softDeleteColumns,
+	},
+	(table) => [
+		uniqueIndex("kanban_board_members_board_user_idx").on(
+			table.boardId,
+			table.userId,
+		),
+	],
+);
+
 export const kanbanColumns = pgTable(
 	"kanban_columns",
 	{
@@ -27,6 +59,7 @@ export const kanbanColumns = pgTable(
 		companyId: uuid("company_id")
 			.notNull()
 			.references(() => companies.id),
+		boardId: uuid("board_id").references(() => kanbanBoards.id),
 		name: text("name").notNull(),
 		slug: text("slug").notNull(),
 		isBase: boolean("is_base").default(false).notNull(),
@@ -34,10 +67,7 @@ export const kanbanColumns = pgTable(
 		...softDeleteColumns,
 	},
 	(table) => [
-		uniqueIndex("kanban_columns_company_slug_ativo_idx").on(
-			table.companyId,
-			table.slug,
-		),
+		uniqueIndex("kanban_columns_board_slug_idx").on(table.boardId, table.slug),
 	],
 );
 
@@ -148,12 +178,43 @@ export const kanbanCardAttachments = pgTable("kanban_card_attachments", {
 	...softDeleteColumns,
 });
 
+export const kanbanBoardsRelations = relations(kanbanBoards, ({ one, many }) => ({
+	company: one(companies, {
+		fields: [kanbanBoards.companyId],
+		references: [companies.id],
+	}),
+	creator: one(user, {
+		fields: [kanbanBoards.createdBy],
+		references: [user.id],
+	}),
+	columns: many(kanbanColumns),
+	members: many(kanbanBoardMembers),
+}));
+
+export const kanbanBoardMembersRelations = relations(
+	kanbanBoardMembers,
+	({ one }) => ({
+		board: one(kanbanBoards, {
+			fields: [kanbanBoardMembers.boardId],
+			references: [kanbanBoards.id],
+		}),
+		user: one(user, {
+			fields: [kanbanBoardMembers.userId],
+			references: [user.id],
+		}),
+	}),
+);
+
 export const kanbanColumnsRelations = relations(
 	kanbanColumns,
 	({ one, many }) => ({
 		company: one(companies, {
 			fields: [kanbanColumns.companyId],
 			references: [companies.id],
+		}),
+		board: one(kanbanBoards, {
+			fields: [kanbanColumns.boardId],
+			references: [kanbanBoards.id],
 		}),
 		cards: many(kanbanCards),
 	}),

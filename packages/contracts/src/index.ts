@@ -470,10 +470,47 @@ export const kanbanTagColorSchema = z.enum([
 ]);
 
 export const createKanbanColumnSchema = z.object({
+	boardId: z.string().uuid(),
 	name: z.string().min(1).max(80),
 });
 
 export type CreateKanbanColumnInput = z.infer<typeof createKanbanColumnSchema>;
+
+export const createKanbanBoardSchema = z.object({
+	name: z.string().min(1).max(120),
+	priority: z.number().int().min(0).default(0),
+	memberUserIds: z.array(z.string().uuid()).default([]),
+});
+
+export type CreateKanbanBoardInput = z.infer<typeof createKanbanBoardSchema>;
+
+export const updateKanbanBoardSchema = z.object({
+	name: z.string().min(1).max(120).optional(),
+	priority: z.number().int().min(0).optional(),
+	memberUserIds: z.array(z.string().uuid()).optional(),
+});
+
+export type UpdateKanbanBoardInput = z.infer<typeof updateKanbanBoardSchema>;
+
+export const kanbanBoardSummarySchema = z.object({
+	id: z.string().uuid(),
+	name: z.string(),
+	isDefault: z.boolean(),
+	priority: z.number().int(),
+	createdBy: z.string().uuid().nullable(),
+	canManage: z.boolean(),
+	memberUserIds: z.array(z.string().uuid()),
+});
+
+export type KanbanBoardSummary = z.infer<typeof kanbanBoardSummarySchema>;
+
+export const listKanbanBoardsResponseSchema = z.object({
+	boards: z.array(kanbanBoardSummarySchema),
+});
+
+export type ListKanbanBoardsResponse = z.infer<
+	typeof listKanbanBoardsResponseSchema
+>;
 
 export const createKanbanCardSchema = z.object({
 	columnId: z.string().uuid(),
@@ -531,6 +568,7 @@ export type AddKanbanObservationInput = z.infer<
 >;
 
 export const listKanbanBoardQuerySchema = z.object({
+	boardId: z.string().uuid(),
 	q: z.string().optional(),
 	assigneeUserId: z.string().uuid().optional(),
 	clientId: z.string().uuid().optional(),
@@ -613,6 +651,7 @@ export const kanbanColumnSchema = z.object({
 });
 
 export const kanbanBoardResponseSchema = z.object({
+	boardId: z.string().uuid(),
 	columns: z.array(kanbanColumnSchema),
 });
 
