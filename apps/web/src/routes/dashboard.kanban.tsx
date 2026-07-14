@@ -13,6 +13,8 @@ import { useModuleAccess } from "@/components/dashboard/ModuleAccessProvider";
 import { ModuleGate } from "@/components/dashboard/ModuleGate";
 import { isCardOverdue } from "@/components/kanban/columnAccent";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { KanbanBoardDialog } from "@/components/kanban/KanbanBoardDialog";
+import { KanbanBoardSwitcher } from "@/components/kanban/KanbanBoardSwitcher";
 import { KanbanCardDialog } from "@/components/kanban/KanbanCardDialog";
 import { KanbanEmptyState } from "@/components/kanban/KanbanEmptyState";
 import { KanbanErrorState } from "@/components/kanban/KanbanErrorState";
@@ -24,10 +26,14 @@ import { ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import {
 	type KanbanBoard as KanbanBoardData,
+	type KanbanBoardSummary,
 	type KanbanCard,
 	type KanbanSort,
 	type KanbanTag,
+	type KanbanViewMode,
 	kanbanApi,
+	loadKanbanPrefs,
+	saveKanbanPrefs,
 } from "@/lib/kanban-api";
 
 type FilterUser = { id: string; name: string; email: string };
@@ -40,6 +46,15 @@ function KanbanPageContent() {
 	const actorPerfil =
 		(session?.user as { perfil?: string } | undefined)?.perfil ?? "cliente";
 	const currentUserId = session?.user?.id ?? "";
+	const companyId =
+		(session?.user as { companyId?: string | null } | undefined)?.companyId ??
+		"";
+
+	const [boards, setBoards] = useState<KanbanBoardSummary[]>([]);
+	const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
+	const [viewMode, setViewMode] = useState<KanbanViewMode>("all");
+	const [featuredBoardId, setFeaturedBoardId] = useState<string | null>(null);
+	const [prefsReady, setPrefsReady] = useState(false);
 
 	const [board, setBoard] = useState<KanbanBoardData | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -68,11 +83,46 @@ function KanbanPageContent() {
 	const [newColumnName, setNewColumnName] = useState("");
 	const [deleteColumnId, setDeleteColumnId] = useState<string | null>(null);
 
+	const [boardDialogOpen, setBoardDialogOpen] = useState(false);
+	const [boardDialogMode, setBoardDialogMode] = useState<"create" | "edit">(
+		"create",
+	);
+	const [editingBoard, setEditingBoard] = useState<KanbanBoardSummary | null>(
+		null,
+	);
+	const [deleteBoardId, setDeleteBoardId] = useState<string | null>(null);
+
+	const canCreateBoard = actorPerfil === "admin_empresa" && allowEdit;
+
+	useEffect(() => {
+		if (!companyId || !currentUserId) return;
+		const prefs = loadKanbanPrefs(companyId, currentUserId);
+		setViewMode(prefs.viewMode);
+		setFeaturedBoardId(prefs.featuredBoardId);
+		setPrefsReady(true);
+	}, [companyId, currentUserId]);
+
+	useEffect(() => {
+		if (!prefsReady || !companyId || !currentUserId) return;
+		saveKanbanPrefs(companyId, currentUserId, {
+			viewMode,
+			featuredBoardId,
+		});
+	}, [prefsReady, companyId, currentUserId, viewMode, featuredBoardId]);
+
+	const loadBoards = useCallback(async () => {
+		const result = await kanbanApi.listBoards();
+		setBoards(result.boards);
+		return result.boards;
+	}, []);
+
 	const loadBoard = useCallback(async () => {
+		if (!activeBoardId) return;
 		setLoading(true);
 		setError(null);
 		try {
 			const result = await kanbanApi.getBoard({
+				boardId: activeBoardId,
 				q: search || undefined,
 				assigneeUserId: filterAssignee || undefined,
 				clientId: filterClient || undefined,
@@ -88,7 +138,7 @@ function KanbanPageContent() {
 		} finally {
 			setLoading(false);
 		}
-	}, [search, filterAssignee, filterClient, filterTag, sort]);
+	}, [activeBoardId, search, filterAssignee, filterClient, filterTag, sort]);
 
 	const loadFiltersData = useCallback(async () => {
 		try {
@@ -100,6 +150,34 @@ function KanbanPageContent() {
 			// filtros auxiliares
 		}
 	}, []);
+
+	useEffect(() => {
+		if (!prefsReady) return;
+		void (async () => {
+			try {
+				const list = await loadBoards();
+				if (list.length === 0) return;
+				setFeaturedBoardId((current) => {
+					if (current && list.some((b) => b.id === current)) return current;
+					return list[0]?.id ?? null;
+				});
+				setActiveBoardId((current) => {
+					if (current && list.some((b) => b.id === current)) return current;
+					return list[0]?.id ?? null;
+				});
+			} catch (err) {
+				const message =
+					err instanceof ApiError ? err.message : "Erro ao listar kanbans";
+				setError(message);
+				setLoading(false);
+			}
+		})();
+	}, [prefsReady, loadBoards]);
+
+	useEffect(() => {
+		if (!prefsReady || viewMode !== "featured" || !featuredBoardId) return;
+		setActiveBoardId(featuredBoardId);
+	}, [prefsReady, viewMode, featuredBoardId]);
 
 	useEffect(() => {
 		void loadBoard();
@@ -175,9 +253,9 @@ function KanbanPageContent() {
 	}
 
 	async function handleCreateColumn() {
-		if (!newColumnName.trim()) return;
+		if (!newColumnName.trim() || !activeBoardId) return;
 		try {
-			await kanbanApi.createColumn(newColumnName.trim());
+			await kanbanApi.createColumn(activeBoardId, newColumnName.trim());
 			toaster.create({ title: "Coluna criada", type: "success" });
 			setNewColumnOpen(false);
 			setNewColumnName("");
@@ -205,8 +283,31 @@ function KanbanPageContent() {
 		}
 	}
 
+	async function handleDeleteBoard() {
+		if (!deleteBoardId) return;
+		try {
+			await kanbanApi.removeBoard(deleteBoardId);
+			toaster.create({ title: "Kanban excluído", type: "success" });
+			if (activeBoardId === deleteBoardId) {
+				setActiveBoardId(null);
+				setBoard(null);
+			}
+			if (featuredBoardId === deleteBoardId) {
+				setFeaturedBoardId(null);
+			}
+			setDeleteBoardId(null);
+			const list = await loadBoards();
+			setActiveBoardId(list[0]?.id ?? null);
+		} catch (err) {
+			toaster.create({
+				title: err instanceof ApiError ? err.message : "Erro ao excluir kanban",
+				type: "error",
+			});
+		}
+	}
+
 	async function refreshAll() {
-		await Promise.all([loadBoard(), loadFiltersData()]);
+		await Promise.all([loadBoards(), loadBoard(), loadFiltersData()]);
 	}
 
 	return (
@@ -226,6 +327,29 @@ function KanbanPageContent() {
 					Organize tarefas com previsão, tags e responsáveis.
 				</Text>
 			</Stack>
+
+			<KanbanBoardSwitcher
+				boards={boards}
+				activeBoardId={activeBoardId}
+				viewMode={viewMode}
+				featuredBoardId={featuredBoardId}
+				canCreate={canCreateBoard}
+				canDeleteBoards={canCreateBoard}
+				onSelectBoard={setActiveBoardId}
+				onViewModeChange={setViewMode}
+				onFeaturedChange={setFeaturedBoardId}
+				onCreate={() => {
+					setBoardDialogMode("create");
+					setEditingBoard(null);
+					setBoardDialogOpen(true);
+				}}
+				onEdit={(b) => {
+					setBoardDialogMode("edit");
+					setEditingBoard(b);
+					setBoardDialogOpen(true);
+				}}
+				onDelete={(b) => setDeleteBoardId(b.id)}
+			/>
 
 			<KanbanToolbar
 				allowEdit={allowEdit}
@@ -289,6 +413,22 @@ function KanbanPageContent() {
 				onSaved={refreshAll}
 			/>
 
+			<KanbanBoardDialog
+				open={boardDialogOpen}
+				onOpenChange={setBoardDialogOpen}
+				mode={boardDialogMode}
+				board={editingBoard}
+				users={users}
+				onSaved={async (saved) => {
+					await loadBoards();
+					if (saved?.id) {
+						setActiveBoardId(saved.id);
+						return;
+					}
+					await loadBoard();
+				}}
+			/>
+
 			<Dialog.Root
 				open={newColumnOpen}
 				onOpenChange={(e) => setNewColumnOpen(e.open)}
@@ -350,6 +490,39 @@ function KanbanPageContent() {
 							<Button
 								colorPalette="red"
 								onClick={() => void handleDeleteColumn()}
+							>
+								Excluir
+							</Button>
+						</Dialog.Footer>
+					</Dialog.Content>
+				</Dialog.Positioner>
+			</Dialog.Root>
+
+			<Dialog.Root
+				open={Boolean(deleteBoardId)}
+				onOpenChange={(e) => {
+					if (!e.open) setDeleteBoardId(null);
+				}}
+			>
+				<Dialog.Backdrop />
+				<Dialog.Positioner>
+					<Dialog.Content borderRadius="2xl">
+						<Dialog.Header>
+							<Dialog.Title>Excluir kanban?</Dialog.Title>
+							<Dialog.CloseTrigger />
+						</Dialog.Header>
+						<Dialog.Body>
+							<Text>
+								O kanban será desativado. Cards e colunas ficam ocultos com ele.
+							</Text>
+						</Dialog.Body>
+						<Dialog.Footer>
+							<Dialog.ActionTrigger asChild>
+								<Button variant="outline">Cancelar</Button>
+							</Dialog.ActionTrigger>
+							<Button
+								colorPalette="red"
+								onClick={() => void handleDeleteBoard()}
 							>
 								Excluir
 							</Button>
