@@ -5,12 +5,12 @@ export class EnsureBaseKanbanColumnsService {
 		private readonly columnRepository = new KanbanColumnRepository(),
 	) {}
 
-	async execute(companyId: string) {
-		const baseCount = await this.columnRepository.countBase(companyId);
+	async execute(companyId: string, boardId: string) {
+		const baseCount = await this.columnRepository.countBase(boardId);
 		if (baseCount >= 4) {
-			return this.columnRepository.listByCompany(companyId);
+			return this.columnRepository.listByBoard(companyId, boardId);
 		}
-		await this.columnRepository.insertBaseColumns(companyId);
-		return this.columnRepository.listByCompany(companyId);
+		await this.columnRepository.insertBaseColumns(companyId, boardId);
+		return this.columnRepository.listByBoard(companyId, boardId);
 	}
 }

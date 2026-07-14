@@ -1,16 +1,29 @@
 import type { CreateKanbanColumnInput } from "@sync_v2/contracts";
+import { KanbanBoardRepository } from "../repositories/KanbanBoardRepository";
 import { KanbanColumnRepository } from "../repositories/KanbanColumnRepository";
 import { AppError } from "../utils/AppError";
+import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 import { EnsureBaseKanbanColumnsService } from "./EnsureBaseKanbanColumnsService";
 
 export class CreateKanbanColumnService {
 	constructor(
 		private readonly ensureBase = new EnsureBaseKanbanColumnsService(),
 		private readonly columnRepository = new KanbanColumnRepository(),
+		private readonly boardRepository = new KanbanBoardRepository(),
 	) {}
 
-	async execute(input: CreateKanbanColumnInput, companyId: string) {
-		await this.ensureBase.execute(companyId);
+	async execute(
+		input: CreateKanbanColumnInput,
+		params: { companyId: string; userId: string; perfil: string },
+	) {
+		await assertCanAccessKanbanBoard(this.boardRepository, {
+			boardId: input.boardId,
+			companyId: params.companyId,
+			userId: params.userId,
+			perfil: params.perfil,
+		});
+
+		await this.ensureBase.execute(params.companyId, input.boardId);
 
 		const name = input.name.trim();
 		if (!name) {
@@ -18,12 +31,15 @@ export class CreateKanbanColumnService {
 		}
 
 		const slug = slugify(name);
-		const existing = await this.columnRepository.findBySlugAny(companyId, slug);
+		const existing = await this.columnRepository.findBySlugAny(
+			input.boardId,
+			slug,
+		);
 		if (existing?.ativo) {
 			throw new AppError(409, "Já existe coluna com este nome.");
 		}
 
-		const position = await this.columnRepository.nextPosition(companyId);
+		const position = await this.columnRepository.nextPosition(input.boardId);
 
 		if (existing && !existing.ativo && !existing.isBase) {
 			const restored = await this.columnRepository.reactivate(existing.id, {
@@ -37,7 +53,8 @@ export class CreateKanbanColumnService {
 		}
 
 		return this.columnRepository.create({
-			companyId,
+			companyId: params.companyId,
+			boardId: input.boardId,
 			name,
 			slug,
 			position,

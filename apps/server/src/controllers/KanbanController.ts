@@ -1,27 +1,33 @@
 import {
 	addKanbanObservationSchema,
+	createKanbanBoardSchema,
 	createKanbanCardSchema,
 	createKanbanChecklistItemSchema,
 	createKanbanColumnSchema,
 	listKanbanBoardQuerySchema,
 	moveKanbanCardSchema,
+	updateKanbanBoardSchema,
 	updateKanbanCardSchema,
 	updateKanbanChecklistItemSchema,
 } from "@sync_v2/contracts";
 import type { Request, Response } from "express";
 import { AddKanbanCardObservationService } from "../services/AddKanbanCardObservationService";
+import { CreateKanbanBoardService } from "../services/CreateKanbanBoardService";
 import { CreateKanbanCardService } from "../services/CreateKanbanCardService";
 import { CreateKanbanChecklistItemService } from "../services/CreateKanbanChecklistItemService";
 import { CreateKanbanColumnService } from "../services/CreateKanbanColumnService";
 import { DownloadKanbanAttachmentService } from "../services/DownloadKanbanAttachmentService";
 import { FindKanbanCardService } from "../services/FindKanbanCardService";
 import { GetKanbanBoardService } from "../services/GetKanbanBoardService";
+import { ListKanbanBoardsService } from "../services/ListKanbanBoardsService";
 import { ListKanbanFilterOptionsService } from "../services/ListKanbanFilterOptionsService";
 import { MoveKanbanCardService } from "../services/MoveKanbanCardService";
 import { SoftDeleteKanbanAttachmentService } from "../services/SoftDeleteKanbanAttachmentService";
+import { SoftDeleteKanbanBoardService } from "../services/SoftDeleteKanbanBoardService";
 import { SoftDeleteKanbanCardService } from "../services/SoftDeleteKanbanCardService";
 import { SoftDeleteKanbanChecklistItemService } from "../services/SoftDeleteKanbanChecklistItemService";
 import { SoftDeleteKanbanColumnService } from "../services/SoftDeleteKanbanColumnService";
+import { UpdateKanbanBoardService } from "../services/UpdateKanbanBoardService";
 import { UpdateKanbanCardService } from "../services/UpdateKanbanCardService";
 import { UpdateKanbanChecklistItemService } from "../services/UpdateKanbanChecklistItemService";
 import { UploadKanbanAttachmentService } from "../services/UploadKanbanAttachmentService";
@@ -29,6 +35,10 @@ import { AppError } from "../utils/AppError";
 
 export class KanbanController {
 	constructor(
+		private readonly listBoardsService = new ListKanbanBoardsService(),
+		private readonly createBoardService = new CreateKanbanBoardService(),
+		private readonly updateBoardService = new UpdateKanbanBoardService(),
+		private readonly softDeleteBoardService = new SoftDeleteKanbanBoardService(),
 		private readonly getBoardService = new GetKanbanBoardService(),
 		private readonly listFilterOptionsService = new ListKanbanFilterOptionsService(),
 		private readonly createColumnService = new CreateKanbanColumnService(),
@@ -46,6 +56,50 @@ export class KanbanController {
 		private readonly downloadAttachmentService = new DownloadKanbanAttachmentService(),
 		private readonly softDeleteAttachmentService = new SoftDeleteKanbanAttachmentService(),
 	) {}
+
+	listBoards = async (req: Request, res: Response) => {
+		try {
+			const ctx = requireCompanyContext(req);
+			const result = await this.listBoardsService.execute(ctx);
+			res.json(result);
+		} catch (error) {
+			handleError(res, error);
+		}
+	};
+
+	createBoard = async (req: Request, res: Response) => {
+		try {
+			const ctx = requireCompanyContext(req);
+			const body = createKanbanBoardSchema.parse(req.body);
+			const board = await this.createBoardService.execute(body, ctx);
+			res.status(201).json(board);
+		} catch (error) {
+			handleError(res, error);
+		}
+	};
+
+	updateBoard = async (req: Request, res: Response) => {
+		try {
+			const ctx = requireCompanyContext(req);
+			const boardId = String(req.params.boardId);
+			const body = updateKanbanBoardSchema.parse(req.body);
+			const board = await this.updateBoardService.execute(boardId, body, ctx);
+			res.json(board);
+		} catch (error) {
+			handleError(res, error);
+		}
+	};
+
+	softDeleteBoard = async (req: Request, res: Response) => {
+		try {
+			const ctx = requireCompanyContext(req);
+			const boardId = String(req.params.boardId);
+			const board = await this.softDeleteBoardService.execute(boardId, ctx);
+			res.json(board);
+		} catch (error) {
+			handleError(res, error);
+		}
+	};
 
 	getBoard = async (req: Request, res: Response) => {
 		try {
@@ -70,9 +124,9 @@ export class KanbanController {
 
 	createColumn = async (req: Request, res: Response) => {
 		try {
-			const { companyId } = requireCompanyContext(req);
+			const ctx = requireCompanyContext(req);
 			const body = createKanbanColumnSchema.parse(req.body);
-			const column = await this.createColumnService.execute(body, companyId);
+			const column = await this.createColumnService.execute(body, ctx);
 			res.status(201).json(column);
 		} catch (error) {
 			handleError(res, error);
@@ -81,9 +135,9 @@ export class KanbanController {
 
 	softDeleteColumn = async (req: Request, res: Response) => {
 		try {
-			const { companyId } = requireCompanyContext(req);
+			const ctx = requireCompanyContext(req);
 			const id = String(req.params.columnId);
-			const column = await this.softDeleteColumnService.execute(id, companyId);
+			const column = await this.softDeleteColumnService.execute(id, ctx);
 			res.json(column);
 		} catch (error) {
 			handleError(res, error);

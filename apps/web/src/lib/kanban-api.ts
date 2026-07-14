@@ -84,10 +84,23 @@ export type KanbanColumn = {
 };
 
 export type KanbanBoard = {
+	boardId: string;
 	columns: KanbanColumn[];
 };
 
+export type KanbanBoardSummary = {
+	id: string;
+	name: string;
+	isDefault: boolean;
+	priority: number;
+	createdBy: string | null;
+	canManage: boolean;
+	memberUserIds: string[];
+};
+
 export type KanbanSort = "createdAt" | "dueAt" | "title" | "position";
+
+export type KanbanViewMode = "all" | "featured";
 
 export type CreateKanbanCardInput = {
 	columnId: string;
@@ -108,8 +121,70 @@ export type UpdateKanbanCardInput = {
 	assigneeUserIds?: string[];
 };
 
+export type CreateKanbanBoardInput = {
+	name: string;
+	priority?: number;
+	memberUserIds?: string[];
+};
+
+export type UpdateKanbanBoardInput = {
+	name?: string;
+	priority?: number;
+	memberUserIds?: string[];
+};
+
+export function kanbanPrefsKey(companyId: string, userId: string) {
+	return `kanban-prefs:${companyId}:${userId}`;
+}
+
+export function loadKanbanPrefs(
+	companyId: string,
+	userId: string,
+): { viewMode: KanbanViewMode; featuredBoardId: string | null } {
+	try {
+		const raw = localStorage.getItem(kanbanPrefsKey(companyId, userId));
+		if (!raw) return { viewMode: "all", featuredBoardId: null };
+		const parsed = JSON.parse(raw) as {
+			viewMode?: KanbanViewMode;
+			featuredBoardId?: string | null;
+		};
+		return {
+			viewMode: parsed.viewMode === "featured" ? "featured" : "all",
+			featuredBoardId: parsed.featuredBoardId ?? null,
+		};
+	} catch {
+		return { viewMode: "all", featuredBoardId: null };
+	}
+}
+
+export function saveKanbanPrefs(
+	companyId: string,
+	userId: string,
+	prefs: { viewMode: KanbanViewMode; featuredBoardId: string | null },
+) {
+	localStorage.setItem(
+		kanbanPrefsKey(companyId, userId),
+		JSON.stringify(prefs),
+	);
+}
+
 export const kanbanApi = {
-	getBoard: (params?: {
+	listBoards: () =>
+		apiFetch<{ boards: KanbanBoardSummary[] }>("/api/kanban/boards"),
+	createBoard: (body: CreateKanbanBoardInput) =>
+		apiFetch<KanbanBoardSummary>("/api/kanban/boards", {
+			method: "POST",
+			body: JSON.stringify(body),
+		}),
+	updateBoard: (boardId: string, body: UpdateKanbanBoardInput) =>
+		apiFetch<KanbanBoardSummary>(`/api/kanban/boards/${boardId}`, {
+			method: "PUT",
+			body: JSON.stringify(body),
+		}),
+	removeBoard: (boardId: string) =>
+		apiFetch(`/api/kanban/boards/${boardId}`, { method: "DELETE" }),
+	getBoard: (params: {
+		boardId: string;
 		q?: string;
 		assigneeUserId?: string;
 		clientId?: string;
@@ -117,15 +192,15 @@ export const kanbanApi = {
 		sort?: KanbanSort;
 	}) => {
 		const search = new URLSearchParams();
-		if (params?.q) search.set("q", params.q);
-		if (params?.assigneeUserId) {
+		search.set("boardId", params.boardId);
+		if (params.q) search.set("q", params.q);
+		if (params.assigneeUserId) {
 			search.set("assigneeUserId", params.assigneeUserId);
 		}
-		if (params?.clientId) search.set("clientId", params.clientId);
-		if (params?.tagId) search.set("tagId", params.tagId);
-		if (params?.sort) search.set("sort", params.sort);
-		const qs = search.toString();
-		return apiFetch<KanbanBoard>(`/api/kanban/board${qs ? `?${qs}` : ""}`);
+		if (params.clientId) search.set("clientId", params.clientId);
+		if (params.tagId) search.set("tagId", params.tagId);
+		if (params.sort) search.set("sort", params.sort);
+		return apiFetch<KanbanBoard>(`/api/kanban/board?${search.toString()}`);
 	},
 	getFilterOptions: () =>
 		apiFetch<{
@@ -133,10 +208,10 @@ export const kanbanApi = {
 			clients: { id: string; name: string }[];
 			tags: KanbanTag[];
 		}>("/api/kanban/filter-options"),
-	createColumn: (name: string) =>
+	createColumn: (boardId: string, name: string) =>
 		apiFetch<{ id: string; name: string; slug: string; isBase: boolean }>(
 			"/api/kanban/columns",
-			{ method: "POST", body: JSON.stringify({ name }) },
+			{ method: "POST", body: JSON.stringify({ boardId, name }) },
 		),
 	removeColumn: (columnId: string) =>
 		apiFetch(`/api/kanban/columns/${columnId}`, { method: "DELETE" }),

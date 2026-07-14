@@ -1,14 +1,17 @@
 import type { MoveKanbanCardInput } from "@sync_v2/contracts";
+import { KanbanBoardRepository } from "../repositories/KanbanBoardRepository";
 import { KanbanCardRepository } from "../repositories/KanbanCardRepository";
 import { KanbanColumnRepository } from "../repositories/KanbanColumnRepository";
 import { KanbanHistoryRepository } from "../repositories/KanbanHistoryRepository";
 import { AppError } from "../utils/AppError";
+import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 import { assertCanAccessKanbanCard } from "./KanbanCardAccessRules";
 
 export class MoveKanbanCardService {
 	constructor(
 		private readonly cardRepository = new KanbanCardRepository(),
 		private readonly columnRepository = new KanbanColumnRepository(),
+		private readonly boardRepository = new KanbanBoardRepository(),
 		private readonly historyRepository = new KanbanHistoryRepository(),
 	) {}
 
@@ -22,6 +25,21 @@ export class MoveKanbanCardService {
 			throw new AppError(404, "Card não encontrado.");
 		}
 
+		const sourceColumn = await this.columnRepository.findById(
+			card.columnId,
+			params.companyId,
+		);
+		if (!sourceColumn?.boardId) {
+			throw new AppError(404, "Coluna não encontrada.");
+		}
+
+		await assertCanAccessKanbanBoard(this.boardRepository, {
+			boardId: sourceColumn.boardId,
+			companyId: params.companyId,
+			userId: params.userId,
+			perfil: params.perfil,
+		});
+
 		await assertCanAccessKanbanCard(this.cardRepository, {
 			cardId: id,
 			userId: params.userId,
@@ -32,8 +50,11 @@ export class MoveKanbanCardService {
 			input.columnId,
 			params.companyId,
 		);
-		if (!column) {
+		if (!column?.boardId) {
 			throw new AppError(404, "Coluna não encontrada.");
+		}
+		if (column.boardId !== sourceColumn.boardId) {
+			throw new AppError(400, "Não é possível mover card entre kanbans.");
 		}
 
 		const moved = await this.cardRepository.move(id, params.companyId, {
