@@ -2,8 +2,10 @@ import {
 	Box,
 	Button,
 	Checkbox,
+	CheckboxGroup,
 	Dialog,
 	Field,
+	Fieldset,
 	HStack,
 	IconButton,
 	Input,
@@ -136,13 +138,6 @@ export function KanbanCardDialog({
 			})
 			.finally(() => setLoading(false));
 	}, [open, mode, card]);
-
-	function setAssignee(userId: string, checked: boolean) {
-		setAssigneeIds((prev) => {
-			if (checked) return prev.includes(userId) ? prev : [...prev, userId];
-			return prev.filter((id) => id !== userId);
-		});
-	}
 
 	function addTag() {
 		const name = tagDraft.trim();
@@ -478,8 +473,13 @@ export function KanbanCardDialog({
 										) : null}
 									</Field.Root>
 
-									<Field.Root required>
-										<Field.Label>Responsáveis</Field.Label>
+									<Fieldset.Root disabled={readOnly}>
+										<Fieldset.Legend>
+											Responsáveis{" "}
+											<Text as="span" color="fg.error">
+												*
+											</Text>
+										</Fieldset.Legend>
 										<Box
 											borderWidth="1px"
 											borderColor="border"
@@ -488,26 +488,25 @@ export function KanbanCardDialog({
 											maxH="160px"
 											overflowY="auto"
 										>
-											<VStack align="stretch" gap={2}>
-												{users.map((u) => (
-													<Checkbox.Root
-														key={u.id}
-														checked={assigneeIds.includes(u.id)}
-														disabled={readOnly}
-														onCheckedChange={(e) =>
-															setAssignee(u.id, e.checked === true)
-														}
-													>
-														<Checkbox.HiddenInput />
-														<Checkbox.Control />
-														<Checkbox.Label>
-															{u.name} ({u.email})
-														</Checkbox.Label>
-													</Checkbox.Root>
-												))}
-											</VStack>
+											<CheckboxGroup
+												value={assigneeIds}
+												onValueChange={setAssigneeIds}
+												disabled={readOnly}
+											>
+												<VStack align="stretch" gap={2}>
+													{users.map((u) => (
+														<Checkbox.Root key={u.id} value={u.id}>
+															<Checkbox.HiddenInput />
+															<Checkbox.Control />
+															<Checkbox.Label>
+																{u.name} ({u.email})
+															</Checkbox.Label>
+														</Checkbox.Root>
+													))}
+												</VStack>
+											</CheckboxGroup>
 										</Box>
-									</Field.Root>
+									</Fieldset.Root>
 
 									{mode === "edit" && card ? (
 										<>
