@@ -7,6 +7,7 @@ import {
 	Stack,
 } from "@chakra-ui/react";
 import { useForm } from "@tanstack/react-form";
+import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import z from "zod";
 
@@ -21,7 +22,13 @@ export default function SignUpForm({
 	onSwitchToSignIn: () => void;
 }) {
 	const navigate = useNavigate();
-	const { isPending } = authClient.useSession();
+	const { data: session, isPending, refetch } = authClient.useSession();
+
+	useEffect(() => {
+		if (!isPending && session) {
+			navigate("/dashboard", { replace: true });
+		}
+	}, [session, isPending, navigate]);
 
 	const form = useForm({
 		defaultValues: {
@@ -37,9 +44,10 @@ export default function SignUpForm({
 					name: value.name,
 				},
 				{
-					onSuccess: () => {
-						navigate("/dashboard");
+					onSuccess: async () => {
+						await refetch();
 						toaster.create({ title: "Sign up successful", type: "success" });
+						navigate("/dashboard");
 					},
 					onError: (error) => {
 						toaster.create({
@@ -59,7 +67,7 @@ export default function SignUpForm({
 		},
 	});
 
-	if (isPending) {
+	if (isPending || session) {
 		return <Loader />;
 	}
 

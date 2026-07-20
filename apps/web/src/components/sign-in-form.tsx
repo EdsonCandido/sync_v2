@@ -12,7 +12,7 @@ import {
 	Text,
 } from "@chakra-ui/react";
 import { useForm } from "@tanstack/react-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LuEye, LuEyeOff } from "react-icons/lu";
 import { Link, useNavigate } from "react-router";
 import z from "zod";
@@ -24,8 +24,14 @@ import Loader from "./loader";
 
 export default function SignInForm() {
 	const navigate = useNavigate();
-	const { isPending } = authClient.useSession();
+	const { data: session, isPending, refetch } = authClient.useSession();
 	const [showPassword, setShowPassword] = useState(false);
+
+	useEffect(() => {
+		if (!isPending && session) {
+			navigate("/dashboard", { replace: true });
+		}
+	}, [session, isPending, navigate]);
 
 	const form = useForm({
 		defaultValues: {
@@ -41,12 +47,13 @@ export default function SignInForm() {
 					rememberMe: value.rememberMe,
 				},
 				{
-					onSuccess: () => {
-						navigate("/dashboard");
+					onSuccess: async () => {
+						await refetch();
 						toaster.create({
 							title: "Login realizado com sucesso",
 							type: "success",
 						});
+						navigate("/dashboard");
 					},
 					onError: (error) => {
 						toaster.create({
@@ -66,7 +73,7 @@ export default function SignInForm() {
 		},
 	});
 
-	if (isPending) {
+	if (isPending || session) {
 		return <Loader />;
 	}
 
