@@ -1,36 +1,43 @@
 {
-	"version": 1,
-	"skills": {
-		"better-auth-best-practices": {
-			"source": "better-auth/skills",
-			"sourceType": "github",
-			"skillPath": "better-auth/best-practices/SKILL.md",
-			"computedHash": "61ba0ef64ed2e7c424401cc848ca33dd6d790a720c44727717dc0c5cba5fc122"
-		},
-		"caveman": {
-			"source": "JuliusBrussee/caveman",
-			"sourceType": "github",
-			"skillPath": "skills/caveman/SKILL.md",
-			"computedHash": "d18cdf73a5f5c496d681a43a6846336b110223bdffa6817b8992529c57f1a815"
-		},
-		"caveman-compress": {
-			"source": "JuliusBrussee/caveman",
-			"sourceType": "github",
-			"skillPath": "skills/caveman-compress/SKILL.md",
-			"computedHash": "84517cd4cf7a49d8d2bc1baf00f61bc359306c6ad9389756b6937eff958bd374"
-		},
-		"chakra-ui-builder": {
-			"source": "chakra-ui/chakra-ui",
-			"ref": "main",
-			"sourceType": "github",
-			"skillPath": "skills/chakra-ui-builder/SKILL.md",
-			"computedHash": "b60b9f098afb4464df10f625bb8635e9567969d99f8b10012e1305ca988906bb"
-		},
-		"turborepo": {
-			"source": "vercel/turborepo",
-			"sourceType": "github",
-			"skillPath": "skills/turborepo/SKILL.md",
-			"computedHash": "7bed931f62129bc3a7dea2da5ac46928f7c02054188b3d418971093a4b50904b"
-		}
-	}
+  "version": 1,
+  "skills": {
+    "better-auth-best-practices": {
+      "source": "better-auth/skills",
+      "sourceType": "github",
+      "skillPath": "better-auth/best-practices/SKILL.md",
+      "computedHash": "61ba0ef64ed2e7c424401cc848ca33dd6d790a720c44727717dc0c5cba5fc122"
+    },
+    "caveman": {
+      "source": "JuliusBrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/caveman/SKILL.md",
+      "computedHash": "d18cdf73a5f5c496d681a43a6846336b110223bdffa6817b8992529c57f1a815"
+    },
+    "caveman-compress": {
+      "source": "JuliusBrussee/caveman",
+      "sourceType": "github",
+      "skillPath": "skills/caveman-compress/SKILL.md",
+      "computedHash": "84517cd4cf7a49d8d2bc1baf00f61bc359306c6ad9389756b6937eff958bd374"
+    },
+    "chakra-ui-builder": {
+      "source": "chakra-ui/chakra-ui",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/chakra-ui-builder/SKILL.md",
+      "computedHash": "b60b9f098afb4464df10f625bb8635e9567969d99f8b10012e1305ca988906bb"
+    },
+    "chakra-ui-refactor": {
+      "source": "chakra-ui/chakra-ui",
+      "ref": "main",
+      "sourceType": "github",
+      "skillPath": "skills/chakra-ui-refactor/SKILL.md",
+      "computedHash": "3ff3aa78fdff4ea9f1b5e950e64c49c2cf428d78b4304bcc769898dd10db668b"
+    },
+    "turborepo": {
+      "source": "vercel/turborepo",
+      "sourceType": "github",
+      "skillPath": "skills/turborepo/SKILL.md",
+      "computedHash": "7bed931f62129bc3a7dea2da5ac46928f7c02054188b3d418971093a4b50904b"
+    }
+  }
 }
