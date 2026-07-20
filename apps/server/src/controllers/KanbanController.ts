@@ -6,6 +6,7 @@ import {
 	createKanbanColumnSchema,
 	listKanbanBoardQuerySchema,
 	moveKanbanCardSchema,
+	recreateKanbanCardSchema,
 	updateKanbanBoardSchema,
 	updateKanbanCardSchema,
 	updateKanbanChecklistItemSchema,
@@ -22,6 +23,7 @@ import { GetKanbanBoardService } from "../services/GetKanbanBoardService";
 import { ListKanbanBoardsService } from "../services/ListKanbanBoardsService";
 import { ListKanbanFilterOptionsService } from "../services/ListKanbanFilterOptionsService";
 import { MoveKanbanCardService } from "../services/MoveKanbanCardService";
+import { RecreateKanbanCardService } from "../services/RecreateKanbanCardService";
 import { SoftDeleteKanbanAttachmentService } from "../services/SoftDeleteKanbanAttachmentService";
 import { SoftDeleteKanbanBoardService } from "../services/SoftDeleteKanbanBoardService";
 import { SoftDeleteKanbanCardService } from "../services/SoftDeleteKanbanCardService";
@@ -47,6 +49,7 @@ export class KanbanController {
 		private readonly findCardService = new FindKanbanCardService(),
 		private readonly updateCardService = new UpdateKanbanCardService(),
 		private readonly moveCardService = new MoveKanbanCardService(),
+		private readonly recreateCardService = new RecreateKanbanCardService(),
 		private readonly softDeleteCardService = new SoftDeleteKanbanCardService(),
 		private readonly createChecklistService = new CreateKanbanChecklistItemService(),
 		private readonly updateChecklistService = new UpdateKanbanChecklistItemService(),
@@ -189,6 +192,18 @@ export class KanbanController {
 			const body = moveKanbanCardSchema.parse(req.body);
 			const card = await this.moveCardService.execute(id, body, ctx);
 			res.json(card);
+		} catch (error) {
+			handleError(res, error);
+		}
+	};
+
+	recreateCard = async (req: Request, res: Response) => {
+		try {
+			const ctx = requireCompanyContext(req);
+			const id = String(req.params.cardId);
+			const body = recreateKanbanCardSchema.parse(req.body);
+			const result = await this.recreateCardService.execute(id, body, ctx);
+			res.status(201).json(result);
 		} catch (error) {
 			handleError(res, error);
 		}

@@ -62,4 +62,40 @@ export class KanbanHistoryRepository {
 			.returning();
 		return row;
 	}
+
+	async cloneToCard(
+		sourceCardId: string,
+		targetCardId: string,
+	): Promise<number> {
+		const rows = await db
+			.select({
+				userId: kanbanCardHistory.userId,
+				eventType: kanbanCardHistory.eventType,
+				message: kanbanCardHistory.message,
+				createdAt: kanbanCardHistory.createdAt,
+			})
+			.from(kanbanCardHistory)
+			.where(
+				and(
+					eq(kanbanCardHistory.cardId, sourceCardId),
+					eq(kanbanCardHistory.ativo, true),
+				),
+			)
+			.orderBy(desc(kanbanCardHistory.createdAt));
+
+		if (rows.length === 0) return 0;
+
+		// Insert oldest-first so chronological order stays stable if ties exist.
+		const ordered = [...rows].reverse();
+		await db.insert(kanbanCardHistory).values(
+			ordered.map((row) => ({
+				cardId: targetCardId,
+				userId: row.userId,
+				eventType: row.eventType,
+				message: row.message,
+				createdAt: row.createdAt,
+			})),
+		);
+		return ordered.length;
+	}
 }

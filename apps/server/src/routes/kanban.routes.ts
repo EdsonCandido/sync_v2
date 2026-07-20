@@ -42,6 +42,11 @@ kanbanRoutes.patch(
 	editAccess.handle,
 	controller.moveCard,
 );
+kanbanRoutes.post(
+	"/cards/:cardId/recreate",
+	editAccess.handle,
+	controller.recreateCard,
+);
 kanbanRoutes.delete(
 	"/cards/:cardId",
 	editAccess.handle,

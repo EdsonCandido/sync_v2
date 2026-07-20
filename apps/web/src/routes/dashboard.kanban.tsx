@@ -410,7 +410,33 @@ function KanbanPageContent() {
 				allowEdit={allowEdit}
 				clients={clients}
 				users={users}
+				columns={(board?.columns ?? []).map((c) => ({
+					id: c.id,
+					name: c.name,
+					slug: c.slug,
+					cardCount: c.cards.length,
+				}))}
+				currentBoardId={activeBoardId}
 				onSaved={refreshAll}
+				onRecreated={async (result) => {
+					setActiveBoardId(result.boardId);
+					try {
+						const detail = await kanbanApi.getCard(result.cardId);
+						setCardMode("edit");
+						setCreateColumnId(null);
+						setSelectedCard(detail);
+						setCardDialogOpen(true);
+					} catch (err) {
+						toaster.create({
+							title:
+								err instanceof ApiError
+									? err.message
+									: "Card recriado, mas falhou ao abrir",
+							type: "error",
+						});
+						await refreshAll();
+					}
+				}}
 			/>
 
 			<KanbanBoardDialog

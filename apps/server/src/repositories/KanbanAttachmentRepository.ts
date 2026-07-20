@@ -28,6 +28,19 @@ export class KanbanAttachmentRepository {
 			.orderBy(asc(kanbanCardAttachments.createdAt));
 	}
 
+	async listWithContentByCard(cardId: string) {
+		return db
+			.select()
+			.from(kanbanCardAttachments)
+			.where(
+				and(
+					eq(kanbanCardAttachments.cardId, cardId),
+					eq(kanbanCardAttachments.ativo, true),
+				),
+			)
+			.orderBy(asc(kanbanCardAttachments.createdAt));
+	}
+
 	async countActiveByCard(cardId: string) {
 		const [row] = await db
 			.select({ value: count() })

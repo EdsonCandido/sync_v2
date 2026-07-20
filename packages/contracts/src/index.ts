@@ -455,6 +455,7 @@ export const kanbanHistoryEventTypeSchema = z.enum([
 	"assignees",
 	"tags",
 	"attachment",
+	"recreated",
 ]);
 
 export type KanbanHistoryEventTypeDto = z.infer<
@@ -541,6 +542,26 @@ export const moveKanbanCardSchema = z.object({
 });
 
 export type MoveKanbanCardInput = z.infer<typeof moveKanbanCardSchema>;
+
+export const recreateKanbanCardSchema = z.object({
+	targetBoardId: z.string().uuid(),
+	assigneeUserIds: z.array(z.string().uuid()).min(1),
+	copyHistory: z.boolean().default(false),
+	copyChecklist: z.boolean().default(false),
+	copyAttachments: z.boolean().default(false),
+});
+
+export type RecreateKanbanCardInput = z.infer<typeof recreateKanbanCardSchema>;
+
+export const recreateKanbanCardResponseSchema = z.object({
+	cardId: z.string().uuid(),
+	boardId: z.string().uuid(),
+	columnId: z.string().uuid(),
+});
+
+export type RecreateKanbanCardResponse = z.infer<
+	typeof recreateKanbanCardResponseSchema
+>;
 
 export const createKanbanChecklistItemSchema = z.object({
 	title: z.string().min(1).max(300),
@@ -657,7 +678,26 @@ export const kanbanBoardResponseSchema = z.object({
 
 export type KanbanBoardResponse = z.infer<typeof kanbanBoardResponseSchema>;
 
+export const kanbanCardClientSchema = z.object({
+	id: z.string().uuid(),
+	name: z.string(),
+	tradeName: z.string().nullable(),
+	document: z.string(),
+	email: z.string(),
+	phone: z.string(),
+	zipCode: z.string(),
+	street: z.string(),
+	number: z.string(),
+	complement: z.string().nullable(),
+	district: z.string(),
+	city: z.string(),
+	state: z.string(),
+});
+
+export type KanbanCardClient = z.infer<typeof kanbanCardClientSchema>;
+
 export const kanbanCardDetailSchema = kanbanCardSchema.extend({
+	client: kanbanCardClientSchema.nullable(),
 	history: z.array(kanbanHistoryItemSchema),
 	attachments: z.array(kanbanAttachmentSchema),
 });

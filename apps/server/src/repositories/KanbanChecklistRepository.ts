@@ -57,6 +57,23 @@ export class KanbanChecklistRepository {
 		return row;
 	}
 
+	async createMany(
+		items: { cardId: string; title: string; position: number }[],
+	) {
+		if (items.length === 0) return [];
+		return db
+			.insert(kanbanCardChecklistItems)
+			.values(
+				items.map((item) => ({
+					cardId: item.cardId,
+					title: item.title,
+					position: item.position,
+					done: false,
+				})),
+			)
+			.returning();
+	}
+
 	async update(
 		id: string,
 		cardId: string,

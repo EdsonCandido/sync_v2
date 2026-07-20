@@ -41,7 +41,8 @@ export type KanbanHistoryItem = {
 		| "checklist"
 		| "assignees"
 		| "tags"
-		| "attachment";
+		| "attachment"
+		| "recreated";
 	message: string;
 	userId: string | null;
 	userName: string | null;
@@ -69,7 +70,24 @@ export type KanbanCard = {
 	createdBy: string | null;
 };
 
+export type KanbanCardClient = {
+	id: string;
+	name: string;
+	tradeName: string | null;
+	document: string;
+	email: string;
+	phone: string;
+	zipCode: string;
+	street: string;
+	number: string;
+	complement: string | null;
+	district: string;
+	city: string;
+	state: string;
+};
+
 export type KanbanCardDetail = KanbanCard & {
+	client: KanbanCardClient | null;
 	history: KanbanHistoryItem[];
 	attachments: KanbanAttachment[];
 };
@@ -119,6 +137,20 @@ export type UpdateKanbanCardInput = {
 	dueAt?: string | null;
 	tagNames?: string[];
 	assigneeUserIds?: string[];
+};
+
+export type RecreateKanbanCardInput = {
+	targetBoardId: string;
+	assigneeUserIds: string[];
+	copyHistory?: boolean;
+	copyChecklist?: boolean;
+	copyAttachments?: boolean;
+};
+
+export type RecreateKanbanCardResponse = {
+	cardId: string;
+	boardId: string;
+	columnId: string;
 };
 
 export type CreateKanbanBoardInput = {
@@ -232,6 +264,14 @@ export const kanbanApi = {
 			method: "PATCH",
 			body: JSON.stringify(body),
 		}),
+	recreateCard: (cardId: string, body: RecreateKanbanCardInput) =>
+		apiFetch<RecreateKanbanCardResponse>(
+			`/api/kanban/cards/${cardId}/recreate`,
+			{
+				method: "POST",
+				body: JSON.stringify(body),
+			},
+		),
 	removeCard: (cardId: string) =>
 		apiFetch(`/api/kanban/cards/${cardId}`, { method: "DELETE" }),
 	addChecklistItem: (cardId: string, title: string) =>
