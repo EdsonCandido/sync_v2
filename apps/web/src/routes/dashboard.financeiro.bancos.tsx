@@ -14,6 +14,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 
 import { useModuleAccess } from "@/components/dashboard/ModuleAccessProvider";
+import { MoneyInput } from "@/components/ui/money-input";
 import { toaster } from "@/components/ui/toaster";
 import { ApiError } from "@/lib/api";
 import {
@@ -21,6 +22,7 @@ import {
 	financeiroApi,
 	formatMoney,
 } from "@/lib/financeiro-api";
+import { numberToMoneyInput, parseMoneyInput } from "@/lib/money";
 
 type FormState = {
 	banco: string;
@@ -41,7 +43,7 @@ const emptyForm: FormState = {
 	agencia: "",
 	conta: "",
 	tipo: "corrente",
-	saldoInicial: "0",
+	saldoInicial: numberToMoneyInput(0),
 	dataSaldoInicial: todayIsoDate(),
 	cor: "#3b82f6",
 };
@@ -119,7 +121,7 @@ export default function DashboardFinanceiroBancos() {
 			agencia: item.agencia,
 			conta: item.conta,
 			tipo: item.tipo,
-			saldoInicial: String(item.saldoInicial),
+			saldoInicial: numberToMoneyInput(item.saldoInicial),
 			dataSaldoInicial: item.dataSaldoInicial?.slice(0, 10) || todayIsoDate(),
 			cor: item.cor || "#3b82f6",
 		});
@@ -135,7 +137,7 @@ export default function DashboardFinanceiroBancos() {
 			});
 			return;
 		}
-		const saldoInicial = Number(form.saldoInicial.replace(",", "."));
+		const saldoInicial = parseMoneyInput(form.saldoInicial);
 		if (Number.isNaN(saldoInicial)) {
 			toaster.create({ title: "Saldo inicial inválido", type: "error" });
 			return;
@@ -389,15 +391,12 @@ export default function DashboardFinanceiroBancos() {
 								<HStack gap={3} align="flex-start">
 									<Field.Root required flex="1">
 										<Field.Label>Saldo inicial</Field.Label>
-										<Input
-											type="number"
-											step="0.01"
+										<MoneyInput
+											placeholder="R$ 0,00"
+											allowNegative
 											value={form.saldoInicial}
-											onChange={(e) =>
-												setForm((f) => ({
-													...f,
-													saldoInicial: e.target.value,
-												}))
+											onChange={(saldoInicial) =>
+												setForm((f) => ({ ...f, saldoInicial }))
 											}
 										/>
 									</Field.Root>
