@@ -10,6 +10,7 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 
+import { MoneyInput } from "@/components/ui/money-input";
 import { toaster } from "@/components/ui/toaster";
 import { ApiError } from "@/lib/api";
 import { type Client, clientsApi } from "@/lib/clients-api";
@@ -17,9 +18,11 @@ import {
 	type BankAccount,
 	type CostCenter,
 	type FinancialCategory,
+	type FinancialEntry,
 	financeiroApi,
 	type Supplier,
 } from "@/lib/financeiro-api";
+import { numberToMoneyInput, parseMoneyInput } from "@/lib/money";
 
 export type FinancialEntryFormDefaults = Partial<{
 	kanbanCardId: string;
@@ -32,8 +35,11 @@ type FinancialEntryFormDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	kind: "receber" | "pagar";
+	mode?: "create" | "edit";
+	entry?: FinancialEntry | null;
 	defaults?: FinancialEntryFormDefaults;
-	onCreated: () => void;
+	onCreated?: () => void;
+	onSaved?: () => void;
 };
 
 type FormState = {
@@ -55,6 +61,10 @@ type FormState = {
 
 function todayIsoDate() {
 	return new Date().toISOString().slice(0, 10);
+}
+
+function toDateInputValue(value: string) {
+	return value.slice(0, 10);
 }
 
 function buildEmptyForm(defaults?: FinancialEntryFormDefaults): FormState {
@@ -81,13 +91,36 @@ function buildEmptyForm(defaults?: FinancialEntryFormDefaults): FormState {
 	};
 }
 
+function buildFormFromEntry(entry: FinancialEntry): FormState {
+	return {
+		valorOriginal: numberToMoneyInput(entry.valorOriginal),
+		dataEmissao: toDateInputValue(entry.dataEmissao),
+		dataVencimento: toDateInputValue(entry.dataVencimento),
+		originType: entry.originType === "manual" ? "manual" : "avulsa",
+		originLabel: entry.originLabel ?? "",
+		categoryId: entry.categoryId ?? "",
+		costCenterId: entry.costCenterId ?? "",
+		bankAccountId: entry.bankAccountId ?? "",
+		clientId: entry.clientId ?? "",
+		supplierId: entry.supplierId ?? "",
+		documento: entry.documento ?? "",
+		numero: entry.numero ?? "",
+		parcelas: String(entry.installmentTotal ?? 1),
+		observacoes: entry.observacoes ?? "",
+	};
+}
+
 export function FinancialEntryFormDialog({
 	open,
 	onOpenChange,
 	kind,
+	mode = "create",
+	entry = null,
 	defaults,
 	onCreated,
+	onSaved,
 }: FinancialEntryFormDialogProps) {
+	const isEdit = mode === "edit" && !!entry;
 	const [form, setForm] = useState<FormState>(() => buildEmptyForm(defaults));
 	const [saving, setSaving] = useState(false);
 	const [categories, setCategories] = useState<FinancialCategory[]>([]);
@@ -99,12 +132,14 @@ export function FinancialEntryFormDialog({
 	useEffect(() => {
 		if (!open) return;
 		setForm(
-			buildEmptyForm({
-				kanbanCardId: defaults?.kanbanCardId,
-				originLabel: defaults?.originLabel,
-				clientId: defaults?.clientId,
-				originType: defaults?.originType,
-			}),
+			isEdit && entry
+				? buildFormFromEntry(entry)
+				: buildEmptyForm({
+						kanbanCardId: defaults?.kanbanCardId,
+						originLabel: defaults?.originLabel,
+						clientId: defaults?.clientId,
+						originType: defaults?.originType,
+					}),
 		);
 		void (async () => {
 			try {
@@ -140,20 +175,64 @@ export function FinancialEntryFormDialog({
 	}, [
 		open,
 		kind,
+		isEdit,
+		entry,
 		defaults?.kanbanCardId,
 		defaults?.originLabel,
 		defaults?.clientId,
 		defaults?.originType,
 	]);
 
+	function notifySaved() {
+		if (onSaved) onSaved();
+		else onCreated?.();
+	}
+
 	async function handleSave() {
-		const valorOriginal = Number(form.valorOriginal.replace(",", "."));
-		if (!valorOriginal || valorOriginal <= 0) {
-			toaster.create({ title: "Valor original inválido", type: "error" });
-			return;
-		}
 		if (!form.dataEmissao || !form.dataVencimento) {
 			toaster.create({ title: "Datas obrigatórias", type: "error" });
+			return;
+		}
+
+		if (isEdit && entry) {
+			setSaving(true);
+			try {
+				await financeiroApi.updateLancamento(entry.id, {
+					originLabel: form.originLabel.trim() || null,
+					clientId: kind === "receber" ? form.clientId || null : null,
+					supplierId: kind === "pagar" ? form.supplierId || null : null,
+					categoryId: form.categoryId || null,
+					costCenterId: form.costCenterId || null,
+					bankAccountId: form.bankAccountId || null,
+					documento: form.documento.trim() || null,
+					numero: form.numero.trim() || null,
+					dataEmissao: form.dataEmissao,
+					dataVencimento: form.dataVencimento,
+					observacoes: form.observacoes.trim() || null,
+				});
+				toaster.create({
+					title:
+						kind === "receber"
+							? "Conta a receber atualizada"
+							: "Conta a pagar atualizada",
+					type: "success",
+				});
+				onOpenChange(false);
+				notifySaved();
+			} catch (error) {
+				toaster.create({
+					title: error instanceof ApiError ? error.message : "Erro ao salvar",
+					type: "error",
+				});
+			} finally {
+				setSaving(false);
+			}
+			return;
+		}
+
+		const valorOriginal = parseMoneyInput(form.valorOriginal);
+		if (!valorOriginal || valorOriginal <= 0) {
+			toaster.create({ title: "Valor original inválido", type: "error" });
 			return;
 		}
 		const parcelas = Math.max(1, Number(form.parcelas) || 1);
@@ -187,7 +266,7 @@ export function FinancialEntryFormDialog({
 				type: "success",
 			});
 			onOpenChange(false);
-			onCreated();
+			notifySaved();
 		} catch (error) {
 			toaster.create({
 				title: error instanceof ApiError ? error.message : "Erro ao salvar",
@@ -198,8 +277,16 @@ export function FinancialEntryFormDialog({
 		}
 	}
 
-	const title =
-		kind === "receber" ? "Nova conta a receber" : "Nova conta a pagar";
+	const title = isEdit
+		? kind === "receber"
+			? "Editar conta a receber"
+			: "Editar conta a pagar"
+		: kind === "receber"
+			? "Nova conta a receber"
+			: "Nova conta a pagar";
+
+	const showOriginFields =
+		isEdit || defaults?.originType !== "kanban";
 
 	return (
 		<Dialog.Root open={open} onOpenChange={(e) => onOpenChange(e.open)}>
@@ -213,32 +300,30 @@ export function FinancialEntryFormDialog({
 					<Dialog.Body>
 						<Stack gap={4}>
 							<HStack gap={3} align="flex-start">
-								<Field.Root required flex="1">
+								<Field.Root required={!isEdit} flex="1">
 									<Field.Label>Valor original</Field.Label>
-									<Input
-										type="number"
-										step="0.01"
-										min="0"
+									<MoneyInput
+										placeholder="R$ 0,00"
 										value={form.valorOriginal}
-										onChange={(e) =>
-											setForm((f) => ({
-												...f,
-												valorOriginal: e.target.value,
-											}))
+										disabled={isEdit}
+										onChange={(valorOriginal) =>
+											setForm((f) => ({ ...f, valorOriginal }))
 										}
 									/>
 								</Field.Root>
-								<Field.Root flex="1">
-									<Field.Label>Parcelas</Field.Label>
-									<Input
-										type="number"
-										min="1"
-										value={form.parcelas}
-										onChange={(e) =>
-											setForm((f) => ({ ...f, parcelas: e.target.value }))
-										}
-									/>
-								</Field.Root>
+								{!isEdit && (
+									<Field.Root flex="1">
+										<Field.Label>Parcelas</Field.Label>
+										<Input
+											type="number"
+											min="1"
+											value={form.parcelas}
+											onChange={(e) =>
+												setForm((f) => ({ ...f, parcelas: e.target.value }))
+											}
+										/>
+									</Field.Root>
+								)}
 							</HStack>
 
 							<HStack gap={3} align="flex-start">
@@ -270,26 +355,9 @@ export function FinancialEntryFormDialog({
 								</Field.Root>
 							</HStack>
 
-							{defaults?.originType !== "kanban" && (
-								<HStack gap={3} align="flex-start">
-									<Field.Root flex="1">
-										<Field.Label>Tipo de origem</Field.Label>
-										<NativeSelect.Root>
-											<NativeSelect.Field
-												value={form.originType}
-												onChange={(e) =>
-													setForm((f) => ({
-														...f,
-														originType: e.target.value as "avulsa" | "manual",
-													}))
-												}
-											>
-												<option value="avulsa">Avulsa</option>
-												<option value="manual">Manual</option>
-											</NativeSelect.Field>
-										</NativeSelect.Root>
-									</Field.Root>
-									<Field.Root flex="1">
+							{showOriginFields &&
+								(isEdit ? (
+									<Field.Root>
 										<Field.Label>Rótulo da origem</Field.Label>
 										<Input
 											value={form.originLabel}
@@ -301,8 +369,41 @@ export function FinancialEntryFormDialog({
 											}
 										/>
 									</Field.Root>
-								</HStack>
-							)}
+								) : (
+									<HStack gap={3} align="flex-start">
+										<Field.Root flex="1">
+											<Field.Label>Tipo de origem</Field.Label>
+											<NativeSelect.Root>
+												<NativeSelect.Field
+													value={form.originType}
+													onChange={(e) =>
+														setForm((f) => ({
+															...f,
+															originType: e.target.value as
+																| "avulsa"
+																| "manual",
+														}))
+													}
+												>
+													<option value="avulsa">Avulsa</option>
+													<option value="manual">Manual</option>
+												</NativeSelect.Field>
+											</NativeSelect.Root>
+										</Field.Root>
+										<Field.Root flex="1">
+											<Field.Label>Rótulo da origem</Field.Label>
+											<Input
+												value={form.originLabel}
+												onChange={(e) =>
+													setForm((f) => ({
+														...f,
+														originLabel: e.target.value,
+													}))
+												}
+											/>
+										</Field.Root>
+									</HStack>
+								))}
 
 							{kind === "receber" ? (
 								<Field.Root>

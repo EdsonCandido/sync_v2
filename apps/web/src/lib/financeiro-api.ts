@@ -438,6 +438,8 @@ export const financeiroApi = {
 			q?: string;
 			kind?: string;
 			status?: string;
+			from?: string;
+			to?: string;
 			page?: number;
 			pageSize?: number;
 		} = {},

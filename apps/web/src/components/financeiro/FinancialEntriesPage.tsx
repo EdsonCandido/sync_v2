@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useModuleAccess } from "@/components/dashboard/ModuleAccessProvider";
 import { FinancialEntryFormDialog } from "@/components/financeiro/FinancialEntryFormDialog";
+import { MoneyInput } from "@/components/ui/money-input";
 import { toaster } from "@/components/ui/toaster";
 import { ApiError } from "@/lib/api";
 import {
@@ -25,6 +26,7 @@ import {
 	formatDate,
 	formatMoney,
 } from "@/lib/financeiro-api";
+import { numberToMoneyInput, parseMoneyInput } from "@/lib/money";
 
 type FinancialEntriesPageProps = {
 	kind: "receber" | "pagar";
@@ -50,10 +52,20 @@ function todayIsoDate() {
 	return new Date().toISOString().slice(0, 10);
 }
 
+function monthRange() {
+	const now = new Date();
+	const from = new Date(now.getFullYear(), now.getMonth(), 1);
+	const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+	const iso = (d: Date) =>
+		`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+	return { from: iso(from), to: iso(to) };
+}
+
 export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 	const { canEdit } = useModuleAccess();
 	const allowEdit = canEdit("financeiro");
 
+	const defaults = monthRange();
 	const [items, setItems] = useState<FinancialEntry[]>([]);
 	const [total, setTotal] = useState(0);
 	const [page, setPage] = useState(1);
@@ -61,9 +73,14 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 	const [q, setQ] = useState("");
 	const [search, setSearch] = useState("");
 	const [status, setStatus] = useState("");
+	const [from, setFrom] = useState(defaults.from);
+	const [to, setTo] = useState(defaults.to);
 	const [loading, setLoading] = useState(true);
 
 	const [formOpen, setFormOpen] = useState(false);
+	const [editingEntry, setEditingEntry] = useState<FinancialEntry | null>(
+		null,
+	);
 	const [selected, setSelected] = useState<FinancialEntry | null>(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [cancelOpen, setCancelOpen] = useState(false);
@@ -91,6 +108,8 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 				q: search || undefined,
 				kind,
 				status: status || undefined,
+				from,
+				to,
 				page,
 				pageSize,
 			});
@@ -107,7 +126,7 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 		} finally {
 			setLoading(false);
 		}
-	}, [search, status, kind, page, pageSize]);
+	}, [search, status, from, to, kind, page, pageSize]);
 
 	useEffect(() => {
 		void load();
@@ -123,7 +142,7 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 
 	async function openBaixar(entry: FinancialEntry) {
 		setSelected(entry);
-		setBaixarValor(String(entry.valorAberto));
+		setBaixarValor(numberToMoneyInput(entry.valorAberto));
 		setBaixarData(todayIsoDate());
 		setBaixarBankId(entry.bankAccountId ?? "");
 		try {
@@ -144,7 +163,7 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 
 	async function handleBaixar() {
 		if (!selected) return;
-		const valor = Number(baixarValor.replace(",", "."));
+		const valor = parseMoneyInput(baixarValor);
 		if (!valor || valor <= 0) {
 			toaster.create({ title: "Valor inválido", type: "error" });
 			return;
@@ -229,16 +248,19 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 			<HStack
 				gap={3}
 				flexDir={{ base: "column", md: "row" }}
-				align={{ base: "stretch", md: "center" }}
+				align={{ base: "stretch", md: "end" }}
 				flexWrap="wrap"
 			>
-				<Input
-					placeholder="Pesquisar documento, número ou observação…"
-					value={q}
-					onChange={(e) => setQ(e.target.value)}
-					maxW={{ md: "320px" }}
-				/>
+				<Field.Root maxW={{ md: "320px" }} flex="1">
+					<Field.Label>Pesquisar</Field.Label>
+					<Input
+						placeholder="Documento, número ou observação…"
+						value={q}
+						onChange={(e) => setQ(e.target.value)}
+					/>
+				</Field.Root>
 				<Field.Root maxW={{ md: "200px" }}>
+					<Field.Label>Status</Field.Label>
 					<NativeSelect.Root>
 						<NativeSelect.Field
 							value={status}
@@ -256,11 +278,36 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 						</NativeSelect.Field>
 					</NativeSelect.Root>
 				</Field.Root>
+				<Field.Root maxW={{ base: "100%", md: "180px" }}>
+					<Field.Label>De</Field.Label>
+					<Input
+						type="date"
+						value={from}
+						onChange={(e) => {
+							setPage(1);
+							setFrom(e.target.value);
+						}}
+					/>
+				</Field.Root>
+				<Field.Root maxW={{ base: "100%", md: "180px" }}>
+					<Field.Label>Até</Field.Label>
+					<Input
+						type="date"
+						value={to}
+						onChange={(e) => {
+							setPage(1);
+							setTo(e.target.value);
+						}}
+					/>
+				</Field.Root>
 				{allowEdit && (
 					<Button
 						bg="helios.solid"
 						color="helios.contrast"
-						onClick={() => setFormOpen(true)}
+						onClick={() => {
+							setEditingEntry(null);
+							setFormOpen(true);
+						}}
 						ml={{ md: "auto" }}
 					>
 						{createLabel}
@@ -312,6 +359,7 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 									"—";
 								const canBaixar =
 									item.status !== "pago" && item.status !== "cancelado";
+								const canEditEntry = canBaixar;
 								const canCancel =
 									item.valorPago === 0 && item.status !== "cancelado";
 
@@ -341,6 +389,18 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 										<Table.Cell textAlign="end">
 											{allowEdit && (
 												<HStack gap={1} justify="flex-end" flexWrap="wrap">
+													{canEditEntry && (
+														<Button
+															size="xs"
+															variant="ghost"
+															onClick={() => {
+																setEditingEntry(item);
+																setFormOpen(true);
+															}}
+														>
+															Editar
+														</Button>
+													)}
 													{canBaixar && (
 														<Button
 															size="xs"
@@ -410,9 +470,14 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 
 			<FinancialEntryFormDialog
 				open={formOpen}
-				onOpenChange={setFormOpen}
+				onOpenChange={(open) => {
+					setFormOpen(open);
+					if (!open) setEditingEntry(null);
+				}}
 				kind={kind}
-				onCreated={() => void load()}
+				mode={editingEntry ? "edit" : "create"}
+				entry={editingEntry}
+				onSaved={() => void load()}
 			/>
 
 			<Dialog.Root
@@ -433,12 +498,10 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 								</Text>
 								<Field.Root required>
 									<Field.Label>Valor</Field.Label>
-									<Input
-										type="number"
-										step="0.01"
-										min="0"
+									<MoneyInput
+										placeholder="R$ 0,00"
 										value={baixarValor}
-										onChange={(e) => setBaixarValor(e.target.value)}
+										onChange={setBaixarValor}
 									/>
 								</Field.Root>
 								<Field.Root required>
