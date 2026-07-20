@@ -5,10 +5,46 @@ import type {
 import { FinancialEntryRepository } from "../repositories/FinancialEntryRepository";
 import {
 	eachDayIso,
+	isSameCalendarMonth,
 	REPORT_TITLES,
 	reportMeta,
 	resolveReportRange,
+	toIsoMonth,
 } from "./financeiroReportShared";
+
+type DayPoint = {
+	date: string;
+	entradasRealizadas: number;
+	saidasRealizadas: number;
+	entradasPrevistas: number;
+	saidasPrevistas: number;
+	saldoAcumulado: number;
+};
+
+function aggregateSeriesByMonth(daily: DayPoint[]): DayPoint[] {
+	const byMonth = new Map<string, DayPoint>();
+	for (const day of daily) {
+		const month = toIsoMonth(day.date);
+		const existing = byMonth.get(month);
+		if (!existing) {
+			byMonth.set(month, {
+				date: month,
+				entradasRealizadas: day.entradasRealizadas,
+				saidasRealizadas: day.saidasRealizadas,
+				entradasPrevistas: day.entradasPrevistas,
+				saidasPrevistas: day.saidasPrevistas,
+				saldoAcumulado: day.saldoAcumulado,
+			});
+			continue;
+		}
+		existing.entradasRealizadas += day.entradasRealizadas;
+		existing.saidasRealizadas += day.saidasRealizadas;
+		existing.entradasPrevistas += day.entradasPrevistas;
+		existing.saidasPrevistas += day.saidasPrevistas;
+		existing.saldoAcumulado = day.saldoAcumulado;
+	}
+	return Array.from(byMonth.values());
+}
 
 export class GetFluxoCaixaReportService {
 	constructor(
@@ -60,7 +96,7 @@ export class GetFluxoCaixaReportService {
 		const sp = mapDay(saidasPrev);
 
 		let saldo = 0;
-		const series = eachDayIso(range.from, range.to).map((date) => {
+		const dailySeries = eachDayIso(range.from, range.to).map((date) => {
 			const entradasRealizadas = er.get(date) ?? 0;
 			const saidasRealizadas = sr.get(date) ?? 0;
 			const entradasPrevistas = ep.get(date) ?? 0;
@@ -80,6 +116,10 @@ export class GetFluxoCaixaReportService {
 			};
 		});
 
+		const series = isSameCalendarMonth(range.from, range.to)
+			? dailySeries
+			: aggregateSeriesByMonth(dailySeries);
+
 		const totER = entradasReal.reduce((a, r) => a + r.total, 0);
 		const totSR = saidasReal.reduce((a, r) => a + r.total, 0);
 		const totEP = entradasPrev.reduce((a, r) => a + r.total, 0);
@@ -94,7 +134,7 @@ export class GetFluxoCaixaReportService {
 				{ label: "Saídas previstas", value: totSP, format: "money" },
 				{
 					label: "Saldo acumulado (fim)",
-					value: series.at(-1)?.saldoAcumulado ?? 0,
+					value: dailySeries.at(-1)?.saldoAcumulado ?? 0,
 					format: "money",
 				},
 			],
@@ -131,7 +171,7 @@ export class GetFluxoCaixaReportService {
 					format: "money",
 				},
 			],
-			rows: series.map((s) => ({
+			rows: dailySeries.map((s) => ({
 				date: s.date,
 				entradasRealizadas: s.entradasRealizadas,
 				saidasRealizadas: s.saidasRealizadas,

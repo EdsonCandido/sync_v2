@@ -38,11 +38,29 @@ function monthPeriodLabel(now = new Date()) {
 	return `${formatDatePt(from)} a ${formatDatePt(to)}`;
 }
 
-function monthLabelShort(isoMonth: string) {
-	const [y, m] = isoMonth.split("-");
-	if (!y || !m) return isoMonth;
-	const d = new Date(Number(y), Number(m) - 1, 1);
-	return d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+function yearPeriodLabel(now = new Date()) {
+	const year = now.getFullYear();
+	return `${formatDatePt(new Date(year, 0, 1))} a ${formatDatePt(new Date(year, 11, 31))}`;
+}
+
+const MONTH_LABELS_PT = [
+	"Jan",
+	"Fev",
+	"Mar",
+	"Abr",
+	"Mai",
+	"Jun",
+	"Jul",
+	"Ago",
+	"Set",
+	"Out",
+	"Nov",
+	"Dez",
+];
+
+function monthLabelPt(isoMonth: string) {
+	const monthIndex = Number(isoMonth.slice(5, 7)) - 1;
+	return MONTH_LABELS_PT[monthIndex] ?? isoMonth.slice(5);
 }
 
 export class GenerateFinanceiroSaudePdfService {
@@ -57,6 +75,10 @@ export class GenerateFinanceiroSaudePdfService {
 	) {}
 
 	async execute(companyId: string): Promise<Buffer> {
+		const year = new Date().getFullYear();
+		const yearFrom = `${year}-01-01`;
+		const yearTo = `${year}-12-31`;
+
 		const [dashboard, receber, pagar, porCentro, company, fluxo] =
 			await Promise.all([
 				this.dashboardService.execute(companyId),
@@ -64,7 +86,7 @@ export class GenerateFinanceiroSaudePdfService {
 				this.entryRepository.listOpenEntriesForReport(companyId, "pagar"),
 				this.entryRepository.groupOpenByCostCenterAndKind(companyId),
 				this.companyRepository.findById(companyId),
-				this.fluxoService.execute(companyId, {}),
+				this.fluxoService.execute(companyId, { from: yearFrom, to: yearTo }),
 			]);
 
 		const companyName =
@@ -96,9 +118,7 @@ export class GenerateFinanceiroSaudePdfService {
 		const [barChart, pieChart, lineChart, fluxoLine, fluxoBars] =
 			await Promise.all([
 				this.charts.barGrouped({
-					labels: dashboard.receitasDespesas.map((r) =>
-						monthLabelShort(r.month),
-					),
+					labels: dashboard.receitasDespesas.map((r) => monthLabelPt(r.month)),
 					datasets: [
 						{
 							label: "Receitas",
@@ -122,7 +142,7 @@ export class GenerateFinanceiroSaudePdfService {
 					height: 200,
 				}),
 				this.charts.line({
-					labels: dashboard.evolucaoMensal.map((r) => monthLabelShort(r.month)),
+					labels: dashboard.evolucaoMensal.map((r) => monthLabelPt(r.month)),
 					datasets: [
 						{
 							label: "Receita",
@@ -145,7 +165,11 @@ export class GenerateFinanceiroSaudePdfService {
 				}),
 				this.charts.line({
 					labels:
-						fluxo.series?.map((s) => formatDatePt(s.date).slice(0, 5)) ?? [],
+						fluxo.series?.map((s) =>
+							s.date.length === 7
+								? monthLabelPt(s.date)
+								: formatDatePt(s.date).slice(0, 5),
+						) ?? [],
 					datasets: [
 						{
 							label: "Saldo acumulado",
@@ -158,35 +182,28 @@ export class GenerateFinanceiroSaudePdfService {
 					height: 180,
 				}),
 				this.charts.barGrouped({
-					labels: (fluxo.series ?? [])
-						.filter(
-							(_, i, arr) => i % Math.max(1, Math.ceil(arr.length / 12)) === 0,
-						)
-						.map((s) => formatDatePt(s.date).slice(0, 5)),
+					labels:
+						fluxo.series?.map((s) =>
+							s.date.length === 7
+								? monthLabelPt(s.date)
+								: formatDatePt(s.date).slice(0, 5),
+						) ?? [],
 					datasets: [
 						{
 							label: "Entradas",
-							data: (fluxo.series ?? [])
-								.filter(
-									(_, i, arr) =>
-										i % Math.max(1, Math.ceil(arr.length / 12)) === 0,
-								)
-								.map(
+							data:
+								fluxo.series?.map(
 									(s) =>
 										(s.entradasRealizadas ?? 0) + (s.entradasPrevistas ?? 0),
-								),
+								) ?? [],
 							color: PdfTheme.colors.chartGreen,
 						},
 						{
 							label: "Saídas",
-							data: (fluxo.series ?? [])
-								.filter(
-									(_, i, arr) =>
-										i % Math.max(1, Math.ceil(arr.length / 12)) === 0,
-								)
-								.map(
+							data:
+								fluxo.series?.map(
 									(s) => (s.saidasRealizadas ?? 0) + (s.saidasPrevistas ?? 0),
-								),
+								) ?? [],
 							color: PdfTheme.colors.chartRed,
 						},
 					],
@@ -405,7 +422,7 @@ export class GenerateFinanceiroSaudePdfService {
 		P.drawHeader(doc, {
 			title: "Receitas, despesas e evolução",
 			companyName: params.companyName,
-			periodLabel: monthPeriodLabel(params.generatedAt),
+			periodLabel: yearPeriodLabel(params.generatedAt),
 			generatedAt: params.generatedAt,
 		});
 
@@ -614,7 +631,7 @@ export class GenerateFinanceiroSaudePdfService {
 		P.drawHeader(doc, {
 			title: "Fluxo de caixa",
 			companyName: params.companyName,
-			periodLabel: monthPeriodLabel(params.generatedAt),
+			periodLabel: yearPeriodLabel(params.generatedAt),
 			generatedAt: params.generatedAt,
 		});
 
@@ -776,7 +793,7 @@ export class GenerateFinanceiroSaudePdfService {
 			.fontSize(7)
 			.fillColor(PdfTheme.colors.subtle)
 			.text(
-				"Relatório gerado automaticamente · Valores em BRL · Soft-delete respeitado nas bases",
+				"Relatório gerado automaticamente · Valores em Reais · Helios Labs",
 				{ align: "center", width },
 			);
 	}

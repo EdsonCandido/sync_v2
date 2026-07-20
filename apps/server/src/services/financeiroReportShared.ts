@@ -11,9 +11,10 @@ export type ReportDateRange = {
 	toIso: string;
 };
 
-export function defaultMonthRange(now = new Date()): ReportDateRange {
-	const from = new Date(now.getFullYear(), now.getMonth(), 1);
-	const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+export function defaultYearRange(now = new Date()): ReportDateRange {
+	const year = now.getFullYear();
+	const from = new Date(year, 0, 1);
+	const to = new Date(year, 11, 31);
 	return toRange(from, to);
 }
 
@@ -21,7 +22,7 @@ export function resolveReportRange(
 	query: FinanceiroReportQuery,
 	now = new Date(),
 ): ReportDateRange {
-	const fallback = defaultMonthRange(now);
+	const fallback = defaultYearRange(now);
 	const from = query.from ? parseIsoDate(query.from) : fallback.from;
 	const to = query.to ? parseIsoDate(query.to) : fallback.to;
 	if (from > to) {
@@ -63,6 +64,22 @@ export function eachDayIso(from: Date, to: Date): string[] {
 		cursor.setDate(cursor.getDate() + 1);
 	}
 	return days;
+}
+
+export function isSameCalendarMonth(from: Date, to: Date): boolean {
+	return (
+		from.getFullYear() === to.getFullYear() &&
+		from.getMonth() === to.getMonth()
+	);
+}
+
+export function toIsoMonth(d: Date | string): string {
+	if (typeof d === "string") {
+		return d.length >= 7 ? d.slice(0, 7) : d;
+	}
+	const y = d.getFullYear();
+	const m = String(d.getMonth() + 1).padStart(2, "0");
+	return `${y}-${m}`;
 }
 
 export function formatDatePt(value: Date | string | null | undefined): string {

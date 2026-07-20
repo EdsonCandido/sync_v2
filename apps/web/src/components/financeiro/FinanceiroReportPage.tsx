@@ -37,10 +37,10 @@ import {
 	formatMoney,
 } from "@/lib/financeiro-api";
 
-function monthRange() {
-	const now = new Date();
-	const from = new Date(now.getFullYear(), now.getMonth(), 1);
-	const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+function yearRange() {
+	const year = new Date().getFullYear();
+	const from = new Date(year, 0, 1);
+	const to = new Date(year, 11, 31);
 	const iso = (d: Date) =>
 		`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 	return { from: iso(from), to: iso(to) };
@@ -55,12 +55,37 @@ function formatCell(
 	return String(value);
 }
 
+const MONTH_LABELS_PT = [
+	"Jan",
+	"Fev",
+	"Mar",
+	"Abr",
+	"Mai",
+	"Jun",
+	"Jul",
+	"Ago",
+	"Set",
+	"Out",
+	"Nov",
+	"Dez",
+];
+
+function seriesAxisLabel(date: string) {
+	if (date.length === 7) {
+		const monthIndex = Number(date.slice(5, 7)) - 1;
+		return MONTH_LABELS_PT[monthIndex] ?? date.slice(5);
+	}
+	const d = new Date(`${date}T12:00:00`);
+	if (Number.isNaN(d.getTime())) return date;
+	return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+}
+
 type Props = {
 	slug: string;
 };
 
 export function FinanceiroReportPage({ slug }: Props) {
-	const defaults = monthRange();
+	const defaults = yearRange();
 	const [from, setFrom] = useState(defaults.from);
 	const [to, setTo] = useState(defaults.to);
 	const [bankAccountId, setBankAccountId] = useState("");
@@ -133,18 +158,21 @@ export function FinanceiroReportPage({ slug }: Props) {
 		}
 	}
 
+	const chartSeries = report?.series ?? [];
+	const chartIsMonthly =
+		chartSeries.length > 0 && chartSeries.every((s) => s.date.length === 7);
+
 	const chart = useChart({
-		data: report?.series ?? [],
+		data: chartSeries.map((s) => ({
+			label: seriesAxisLabel(s.date),
+			entradas: (s.entradasRealizadas ?? 0) + (s.entradasPrevistas ?? 0),
+			saidas: (s.saidasRealizadas ?? 0) + (s.saidasPrevistas ?? 0),
+			saldoAcumulado: s.saldoAcumulado ?? 0,
+		})),
 		series: [
-			{ name: "entradasRealizadas", color: "green.solid", label: "Ent. real." },
-			{ name: "saidasRealizadas", color: "red.solid", label: "Sai. real." },
-			{
-				name: "entradasPrevistas",
-				color: "teal.solid",
-				label: "Ent. prev.",
-			},
-			{ name: "saidasPrevistas", color: "orange.solid", label: "Sai. prev." },
-			{ name: "saldoAcumulado", color: "blue.solid", label: "Saldo" },
+			{ name: "entradas", color: "green.solid", label: "Entrada" },
+			{ name: "saidas", color: "red.solid", label: "Saída" },
+			{ name: "saldoAcumulado", color: "blue.solid", label: "Saldo acumulado" },
 		],
 	});
 
@@ -308,13 +336,13 @@ export function FinanceiroReportPage({ slug }: Props) {
 							h="360px"
 						>
 							<Heading size="sm" mb={3}>
-								Série diária
+								{chartIsMonthly ? "Série mensal" : "Série diária"}
 							</Heading>
 							<Chart.Root chart={chart} h="300px">
 								<ResponsiveContainer width="100%" height="100%">
 									<LineChart data={chart.data}>
 										<CartesianGrid strokeDasharray="3 3" />
-										<XAxis dataKey="date" tick={{ fontSize: 11 }} />
+										<XAxis dataKey="label" tick={{ fontSize: 11 }} />
 										<YAxis tick={{ fontSize: 11 }} />
 										<Tooltip content={<Chart.Tooltip />} />
 										<Legend />
