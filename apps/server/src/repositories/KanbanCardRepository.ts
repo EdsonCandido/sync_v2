@@ -37,6 +37,17 @@ export class KanbanCardRepository {
 			.select({
 				card: kanbanCards,
 				clientName: clients.name,
+				clientTradeName: clients.tradeName,
+				clientDocument: clients.document,
+				clientEmail: clients.email,
+				clientPhone: clients.phone,
+				clientZipCode: clients.zipCode,
+				clientStreet: clients.street,
+				clientNumber: clients.number,
+				clientComplement: clients.complement,
+				clientDistrict: clients.district,
+				clientCity: clients.city,
+				clientState: clients.state,
 			})
 			.from(kanbanCards)
 			.leftJoin(clients, eq(kanbanCards.clientId, clients.id))

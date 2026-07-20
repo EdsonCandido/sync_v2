@@ -42,6 +42,25 @@ export class FindKanbanCardService {
 			(h) => h.eventType === "observation",
 		).length;
 
+		const client =
+			row.card.clientId && row.clientName
+				? {
+						id: row.card.clientId,
+						name: row.clientName,
+						tradeName: row.clientTradeName ?? null,
+						document: row.clientDocument ?? "",
+						email: row.clientEmail ?? "",
+						phone: row.clientPhone ?? "",
+						zipCode: row.clientZipCode ?? "",
+						street: row.clientStreet ?? "",
+						number: row.clientNumber ?? "",
+						complement: row.clientComplement ?? null,
+						district: row.clientDistrict ?? "",
+						city: row.clientCity ?? "",
+						state: row.clientState ?? "",
+					}
+				: null;
+
 		return {
 			id: row.card.id,
 			companyId: row.card.companyId,
@@ -50,6 +69,7 @@ export class FindKanbanCardService {
 			description: row.card.description,
 			clientId: row.card.clientId,
 			clientName: row.clientName ?? null,
+			client,
 			dueAt: row.card.dueAt,
 			position: row.card.position,
 			assignees: assignees.map((a) => ({
