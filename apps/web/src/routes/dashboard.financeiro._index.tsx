@@ -256,14 +256,35 @@ function ChartShell({
 	);
 }
 
+const MONTH_LABELS_PT = [
+	"Jan",
+	"Fev",
+	"Mar",
+	"Abr",
+	"Mai",
+	"Jun",
+	"Jul",
+	"Ago",
+	"Set",
+	"Out",
+	"Nov",
+	"Dez",
+];
+
+function monthLabelPt(monthKey: string) {
+	const monthIndex = Number(monthKey.slice(5, 7)) - 1;
+	return MONTH_LABELS_PT[monthIndex] ?? monthKey.slice(5);
+}
+
 function ReceitasDespesasChart({
 	data,
 }: {
 	data: FinanceiroDashboard["receitasDespesas"];
 }) {
+	const year = data[0]?.month.slice(0, 4) ?? String(new Date().getFullYear());
 	const chart = useChart({
 		data: data.map((d) => ({
-			month: d.month.slice(5),
+			month: monthLabelPt(d.month),
 			receitas: d.receitas,
 			despesas: d.despesas,
 		})),
@@ -273,7 +294,7 @@ function ReceitasDespesasChart({
 		],
 	});
 	return (
-		<ChartShell title="Receitas x Despesas" subtitle="Últimos 6 meses">
+		<ChartShell title="Receitas x Despesas" subtitle={`${year} · Jan–Dez`}>
 			<Box h="240px">
 				<Chart.Root maxH="240px" chart={chart} h="full">
 					<ResponsiveContainer width="100%" height="100%">
@@ -302,21 +323,6 @@ function ReceitasDespesasChart({
 	);
 }
 
-const MONTH_LABELS_PT = [
-	"Jan",
-	"Fev",
-	"Mar",
-	"Abr",
-	"Mai",
-	"Jun",
-	"Jul",
-	"Ago",
-	"Set",
-	"Out",
-	"Nov",
-	"Dez",
-];
-
 function ProjecaoAnualChart({
 	data,
 }: {
@@ -324,14 +330,11 @@ function ProjecaoAnualChart({
 }) {
 	const year = data[0]?.month.slice(0, 4) ?? String(new Date().getFullYear());
 	const chart = useChart({
-		data: data.map((d) => {
-			const monthIndex = Number(d.month.slice(5, 7)) - 1;
-			return {
-				month: MONTH_LABELS_PT[monthIndex] ?? d.month.slice(5),
-				receitas: d.receitas,
-				despesas: d.despesas,
-			};
-		}),
+		data: data.map((d) => ({
+			month: monthLabelPt(d.month),
+			receitas: d.receitas,
+			despesas: d.despesas,
+		})),
 		series: [
 			{ name: "receitas", color: "green.solid", label: "Receitas" },
 			{ name: "despesas", color: "red.solid", label: "Despesas" },
@@ -375,9 +378,10 @@ function EvolucaoMensalChart({
 }: {
 	data: FinanceiroDashboard["evolucaoMensal"];
 }) {
+	const year = data[0]?.month.slice(0, 4) ?? String(new Date().getFullYear());
 	const chart = useChart({
 		data: data.map((d) => ({
-			month: d.month.slice(5),
+			month: monthLabelPt(d.month),
 			receita: d.receita,
 			despesa: d.despesa,
 			lucro: d.lucro,
@@ -389,7 +393,10 @@ function EvolucaoMensalChart({
 		],
 	});
 	return (
-		<ChartShell title="Evolução mensal" subtitle="12 meses">
+		<ChartShell
+			title="Evolução mensal"
+			subtitle={`${year} · por pagamento · Jan–Dez`}
+		>
 			<Box h="240px">
 				<Chart.Root maxH="240px" chart={chart} h="full">
 					<ResponsiveContainer width="100%" height="100%">

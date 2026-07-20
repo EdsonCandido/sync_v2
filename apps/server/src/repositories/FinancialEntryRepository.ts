@@ -706,17 +706,16 @@ export class FinancialEntryRepository {
 		};
 	}
 
-	async monthlyPaymentSeries(companyId: string, months: number) {
+	async yearlyPaymentSeries(companyId: string, year: number) {
 		const result: Array<{
 			month: string;
 			receitas: number;
 			despesas: number;
 		}> = [];
-		const now = new Date();
-		for (let i = months - 1; i >= 0; i--) {
-			const from = new Date(now.getFullYear(), now.getMonth() - i, 1);
-			const to = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-			const month = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}`;
+		for (let m = 0; m < 12; m++) {
+			const from = new Date(year, m, 1);
+			const to = new Date(year, m + 1, 0);
+			const month = `${year}-${String(m + 1).padStart(2, "0")}`;
 			const [receber, pagar] = await Promise.all([
 				this.sumPaymentsInRange(companyId, "receber", from, to),
 				this.sumPaymentsInRange(companyId, "pagar", from, to),
