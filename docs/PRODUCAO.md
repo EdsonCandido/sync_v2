@@ -81,8 +81,12 @@ docker compose exec server sh -c 'cd /app/packages/db && npm run db:push'
 
 - Com `SEED_ON_START=true`, o entrypoint do `server` roda o bootstrap Helios antes da API (idempotente).
 - Manual: `docker compose exec server sh -c 'cd /app && npm run db:seed -w server'`
+- Backfill financeiro (categorias + centros) em **todas** as empresas ativas, idempotente:
+  `docker compose exec server sh -c 'cd /app && npm run db:seed-financeiro-defaults -w server'`
 - Cria: plano básico, empresa/cliente Helios, 3 usuários (`super` / `admin_empresa` / `cliente`), categorias, centros de custo, 1 banco.
 - Variáveis: ver `apps/server/.env.example`.
+
+Os scripts CLI usam `dist/*.mjs` (build do Docker). Sem `tsx` no container.
 
 ## Portas no host
 
