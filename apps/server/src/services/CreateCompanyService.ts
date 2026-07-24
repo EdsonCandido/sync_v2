@@ -2,11 +2,13 @@ import type { CreateCompanyInput } from "@sync_v2/contracts";
 import { CompanyRepository } from "../repositories/CompanyRepository";
 import { PlanRepository } from "../repositories/PlanRepository";
 import { AppError } from "../utils/AppError";
+import { SeedCompanyFinanceiroDefaultsService } from "./SeedCompanyFinanceiroDefaultsService";
 
 export class CreateCompanyService {
 	constructor(
 		private readonly companyRepository = new CompanyRepository(),
 		private readonly planRepository = new PlanRepository(),
+		private readonly seedFinanceiroDefaults = new SeedCompanyFinanceiroDefaultsService(),
 	) {}
 
 	async execute(input: CreateCompanyInput, userId: string) {
@@ -29,7 +31,7 @@ export class CreateCompanyService {
 			throw new AppError(409, "Email já cadastrado.");
 		}
 
-		return this.companyRepository.create({
+		const company = await this.companyRepository.create({
 			...input,
 			document: normalizeDocument(input.document),
 			email: input.email.toLowerCase(),
@@ -38,6 +40,17 @@ export class CreateCompanyService {
 			createdBy: userId,
 			updatedBy: userId,
 		});
+
+		if (!company) {
+			throw new AppError(500, "Falha ao criar empresa.");
+		}
+
+		await this.seedFinanceiroDefaults.execute({
+			companyId: company.id,
+			userId,
+		});
+
+		return company;
 	}
 }
 

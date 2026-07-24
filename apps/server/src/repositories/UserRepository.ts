@@ -71,6 +71,15 @@ export class UserRepository {
 		return row ?? null;
 	}
 
+	async findFirstActiveByPerfil(perfil: string) {
+		const [row] = await db
+			.select({ id: user.id })
+			.from(user)
+			.where(and(eq(user.perfil, perfil), eq(user.ativo, true)))
+			.limit(1);
+		return row ?? null;
+	}
+
 	async list(params: {
 		q?: string;
 		page: number;

@@ -103,6 +103,14 @@ export class CompanyRepository {
 		};
 	}
 
+	async listAllActive() {
+		return db
+			.select()
+			.from(companies)
+			.where(eq(companies.ativo, true))
+			.orderBy(desc(companies.createdAt));
+	}
+
 	async create(
 		data: CreateCompanyInput & {
 			planExpiresAt: Date;

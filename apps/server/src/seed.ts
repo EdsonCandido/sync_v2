@@ -16,38 +16,10 @@ import { plans } from "@sync_v2/db/schema/plans";
 import { env } from "@sync_v2/env/server";
 import { and, eq, inArray, ne, notInArray } from "drizzle-orm";
 import { auth } from "./auth";
-
-const RECEITA_CATS = [
-	{ name: "Venda", tipo: "receita", cor: "green", icone: "shopping" },
-	{ name: "Serviços", tipo: "receita", cor: "blue", icone: "wrench" },
-	{ name: "Mensalidades", tipo: "receita", cor: "teal", icone: "calendar" },
-	{
-		name: "Consultorias",
-		tipo: "receita",
-		cor: "purple",
-		icone: "briefcase",
-	},
-	{ name: "Comissão", tipo: "receita", cor: "cyan", icone: "percent" },
-] as const;
-
-const DESPESA_CATS = [
-	{ name: "Água", tipo: "despesa", cor: "blue", icone: "droplet" },
-	{ name: "Energia", tipo: "despesa", cor: "yellow", icone: "zap" },
-	{ name: "Internet", tipo: "despesa", cor: "orange", icone: "wifi" },
-	{ name: "Salários", tipo: "despesa", cor: "red", icone: "users" },
-	{ name: "Marketing", tipo: "despesa", cor: "pink", icone: "megaphone" },
-	{ name: "Impostos", tipo: "despesa", cor: "gray", icone: "landmark" },
-	{ name: "Combustível", tipo: "despesa", cor: "amber", icone: "fuel" },
-] as const;
-
-const CENTROS = [
-	{ name: "Administrativo", codigo: "ADM" },
-	{ name: "Comercial", codigo: "COM" },
-	{ name: "Marketing", codigo: "MKT" },
-	{ name: "Financeiro", codigo: "FIN" },
-	{ name: "TI", codigo: "TI" },
-	{ name: "Operacional", codigo: "OPS" },
-] as const;
+import {
+	DEFAULT_COST_CENTERS,
+	DEFAULT_FINANCIAL_CATEGORIES,
+} from "./utils/defaultFinanceiroCatalog";
 
 function requireSeedEnv(name: string, value: string | undefined): string {
 	if (!value) {
@@ -320,7 +292,7 @@ async function ensureSupplierAvulso(companyId: string, userId: string) {
 }
 
 async function ensureFinanceiroBase(companyId: string, userId: string) {
-	for (const cat of [...RECEITA_CATS, ...DESPESA_CATS]) {
+	for (const cat of DEFAULT_FINANCIAL_CATEGORIES) {
 		const [existing] = await db
 			.select()
 			.from(financialCategories)
@@ -359,7 +331,7 @@ async function ensureFinanceiroBase(companyId: string, userId: string) {
 	}
 	console.log("Seed: categorias financeiras.");
 
-	for (const cc of CENTROS) {
+	for (const cc of DEFAULT_COST_CENTERS) {
 		const [existing] = await db
 			.select()
 			.from(costCenters)
@@ -487,7 +459,7 @@ async function softDeleteExtras(params: {
 		.set({ ...soft, updatedBy: null })
 		.where(ne(suppliers.id, params.keepSupplierId));
 
-	const keepCatNames = [...RECEITA_CATS, ...DESPESA_CATS].map((c) => c.name);
+	const keepCatNames = DEFAULT_FINANCIAL_CATEGORIES.map((c) => c.name);
 	await db
 		.update(financialCategories)
 		.set({ ...soft, updatedBy: null })
@@ -502,7 +474,7 @@ async function softDeleteExtras(params: {
 		.set({ ...soft, updatedBy: null })
 		.where(ne(financialCategories.companyId, params.companyId));
 
-	const keepCcCodigos = CENTROS.map((c) => c.codigo);
+	const keepCcCodigos = DEFAULT_COST_CENTERS.map((c) => c.codigo);
 	await db
 		.update(costCenters)
 		.set({ ...soft, updatedBy: null })

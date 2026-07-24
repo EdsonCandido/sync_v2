@@ -8,7 +8,8 @@
 		"compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
 		"dev": "tsx watch src/index.ts",
 		"start": "node dist/index.mjs",
-		"db:seed": "tsx src/seed.ts"
+		"db:seed": "tsx src/seed.ts",
+		"db:seed-financeiro-defaults": "tsx src/backfillFinanceiroDefaults.ts"
 	},
 	"dependencies": {
 		"@sync_v2/auth": "*",

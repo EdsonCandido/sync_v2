@@ -17,6 +17,7 @@
 		"db:generate": "turbo run db:generate -F @sync_v2/db",
 		"db:migrate": "turbo run db:migrate -F @sync_v2/db",
 		"db:seed": "npm run db:seed -w server",
+		"db:seed-financeiro-defaults": "npm run db:seed-financeiro-defaults -w server",
 		"db:start": "docker compose up -d postgres",
 		"db:watch": "docker compose up postgres",
 		"db:stop": "docker compose stop postgres",
