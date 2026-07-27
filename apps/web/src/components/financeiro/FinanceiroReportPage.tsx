@@ -86,6 +86,8 @@ type Props = {
 
 export function FinanceiroReportPage({ slug }: Props) {
 	const defaults = yearRange();
+	const [fromDraft, setFromDraft] = useState(defaults.from);
+	const [toDraft, setToDraft] = useState(defaults.to);
 	const [from, setFrom] = useState(defaults.from);
 	const [to, setTo] = useState(defaults.to);
 	const [bankAccountId, setBankAccountId] = useState("");
@@ -207,18 +209,27 @@ export function FinanceiroReportPage({ slug }: Props) {
 					<Field.Label>De</Field.Label>
 					<Input
 						type="date"
-						value={from}
-						onChange={(e) => setFrom(e.target.value)}
+						value={fromDraft}
+						onChange={(e) => setFromDraft(e.target.value)}
 					/>
 				</Field.Root>
 				<Field.Root maxW="180px">
 					<Field.Label>Até</Field.Label>
 					<Input
 						type="date"
-						value={to}
-						onChange={(e) => setTo(e.target.value)}
+						value={toDraft}
+						onChange={(e) => setToDraft(e.target.value)}
 					/>
 				</Field.Root>
+				<Button
+					variant="outline"
+					onClick={() => {
+						setFrom(fromDraft);
+						setTo(toDraft);
+					}}
+				>
+					Pesquisar
+				</Button>
 				{needsBank ? (
 					<Field.Root maxW="320px">
 						<Field.Label>Conta bancária</Field.Label>

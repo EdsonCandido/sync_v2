@@ -73,6 +73,8 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 	const [q, setQ] = useState("");
 	const [search, setSearch] = useState("");
 	const [status, setStatus] = useState("");
+	const [fromDraft, setFromDraft] = useState(defaults.from);
+	const [toDraft, setToDraft] = useState(defaults.to);
 	const [from, setFrom] = useState(defaults.from);
 	const [to, setTo] = useState(defaults.to);
 	const [loading, setLoading] = useState(true);
@@ -282,24 +284,28 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 					<Field.Label>De</Field.Label>
 					<Input
 						type="date"
-						value={from}
-						onChange={(e) => {
-							setPage(1);
-							setFrom(e.target.value);
-						}}
+						value={fromDraft}
+						onChange={(e) => setFromDraft(e.target.value)}
 					/>
 				</Field.Root>
 				<Field.Root maxW={{ base: "100%", md: "180px" }}>
 					<Field.Label>Até</Field.Label>
 					<Input
 						type="date"
-						value={to}
-						onChange={(e) => {
-							setPage(1);
-							setTo(e.target.value);
-						}}
+						value={toDraft}
+						onChange={(e) => setToDraft(e.target.value)}
 					/>
 				</Field.Root>
+				<Button
+					variant="outline"
+					onClick={() => {
+						setPage(1);
+						setFrom(fromDraft);
+						setTo(toDraft);
+					}}
+				>
+					Pesquisar
+				</Button>
 				{allowEdit && (
 					<Button
 						bg="helios.solid"
