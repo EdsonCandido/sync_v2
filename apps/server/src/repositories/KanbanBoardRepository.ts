@@ -37,6 +37,21 @@ export class KanbanBoardRepository {
 		return row ?? null;
 	}
 
+	async findByName(companyId: string, name: string) {
+		const [row] = await db
+			.select()
+			.from(kanbanBoards)
+			.where(
+				and(
+					eq(kanbanBoards.companyId, companyId),
+					eq(kanbanBoards.name, name),
+					eq(kanbanBoards.ativo, true),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
 	async listByCompany(companyId: string) {
 		return db
 			.select()

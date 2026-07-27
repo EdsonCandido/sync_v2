@@ -712,7 +712,12 @@ const bankAccountTipoSchema = z.enum([
 	"outro",
 ]);
 const financialEntryKindSchema = z.enum(["receber", "pagar"]);
-const financialOriginTypeSchema = z.enum(["avulsa", "kanban", "manual"]);
+const financialOriginTypeSchema = z.enum([
+	"avulsa",
+	"kanban",
+	"manual",
+	"itr",
+]);
 const financialEntryStatusSchema = z.enum([
 	"em_aberto",
 	"parcial",
@@ -1305,4 +1310,127 @@ export const financeiroSaudeAnalysisSchema = z.object({
 
 export type FinanceiroSaudeAnalysis = z.infer<
 	typeof financeiroSaudeAnalysisSchema
+>;
+
+/** ITR */
+
+export const createItrProcessSchema = z
+	.object({
+		clientId: z.string().uuid().optional().nullable(),
+		document: alphanumericDocumentSchema.optional(),
+		name: z.string().min(1).optional(),
+		email: z.email().optional(),
+		phone: z
+			.string()
+			.min(1)
+			.optional()
+			.refine((v) => {
+				if (v === undefined) return true;
+				const digits = v.replace(/\D/g, "");
+				return digits.length >= 10 && digits.length <= 11;
+			}, "Telefone deve ter 10 ou 11 dígitos."),
+		valor: z.coerce.number().positive(),
+		observacoes: z.string().optional().nullable(),
+		dataVencimento: z.coerce.date().optional(),
+	})
+	.superRefine((data, ctx) => {
+		if (data.clientId) return;
+		const required = ["document", "name", "email", "phone"] as const;
+		for (const key of required) {
+			if (!data[key]?.toString().trim()) {
+				ctx.addIssue({
+					code: "custom",
+					message: "Campo obrigatório quando clientId não é informado.",
+					path: [key],
+				});
+			}
+		}
+		if (data.document) {
+			const digits = data.document.replace(/\D/g, "");
+			if (digits.length !== 11) {
+				ctx.addIssue({
+					code: "custom",
+					message: "CPF deve ter 11 dígitos.",
+					path: ["document"],
+				});
+			}
+		}
+	});
+
+export type CreateItrProcessInput = z.infer<typeof createItrProcessSchema>;
+
+export const listItrProcessesQuerySchema = z.object({
+	q: z.string().optional(),
+	page: z.coerce.number().int().min(1).default(1),
+	pageSize: z.coerce.number().int().min(1).max(100).default(10),
+});
+
+export type ListItrProcessesQuery = z.infer<typeof listItrProcessesQuerySchema>;
+
+export const itrFileKindSchema = z.enum(["declaracao", "recibo", "anexo"]);
+
+export const itrFileMetaSchema = z.object({
+	id: z.string().uuid(),
+	kind: itrFileKindSchema,
+	originalName: z.string(),
+	mimeType: z.string(),
+	sizeBytes: z.number().int(),
+	createdAt: z.coerce.date(),
+});
+
+export type ItrFileMeta = z.infer<typeof itrFileMetaSchema>;
+
+export const itrProcessResponseSchema = z.object({
+	id: z.string().uuid(),
+	companyId: z.string().uuid(),
+	clientId: z.string().uuid(),
+	clientName: z.string(),
+	clientDocument: z.string(),
+	kanbanCardId: z.string().uuid(),
+	financialEntryId: z.string().uuid(),
+	valor: z.number(),
+	observacoes: z.string().nullable(),
+	columnSlug: z.string(),
+	columnName: z.string(),
+	files: z.array(itrFileMetaSchema),
+	ativo: z.boolean(),
+	createdAt: z.coerce.date(),
+	updatedAt: z.coerce.date(),
+});
+
+export type ItrProcessResponse = z.infer<typeof itrProcessResponseSchema>;
+
+export const publicItrConsultQuerySchema = z.object({
+	cpf: z.string().min(11).max(14),
+});
+
+export type PublicItrConsultQuery = z.infer<typeof publicItrConsultQuerySchema>;
+
+export const publicItrFileSchema = z.object({
+	id: z.string().uuid(),
+	kind: itrFileKindSchema,
+	originalName: z.string(),
+	mimeType: z.string(),
+	sizeBytes: z.number().int(),
+});
+
+export const publicItrConsultItemSchema = z.object({
+	id: z.string().uuid(),
+	clientName: z.string(),
+	statusSlug: z.string(),
+	statusLabel: z.string(),
+	message: z.string(),
+	canDownload: z.boolean(),
+	files: z.array(publicItrFileSchema),
+	createdAt: z.coerce.date(),
+});
+
+export type PublicItrConsultItem = z.infer<typeof publicItrConsultItemSchema>;
+
+export const publicItrConsultResponseSchema = z.object({
+	items: z.array(publicItrConsultItemSchema),
+});
+
+export type PublicItrConsultResponse = z.infer<
+	typeof publicItrConsultResponseSchema
 >;

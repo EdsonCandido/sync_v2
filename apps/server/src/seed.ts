@@ -16,6 +16,7 @@ import { plans } from "@sync_v2/db/schema/plans";
 import { env } from "@sync_v2/env/server";
 import { and, eq, inArray, ne, notInArray } from "drizzle-orm";
 import { auth } from "./auth";
+import { EnsureItrKanbanBoardService } from "./services/EnsureItrKanbanBoardService";
 import {
 	DEFAULT_COST_CENTERS,
 	DEFAULT_FINANCIAL_CATEGORIES,
@@ -586,6 +587,8 @@ async function main() {
 	const clientId = await ensureHeliosClient(companyId, adminUserId);
 	const bankId = await ensureFinanceiroBase(companyId, adminUserId);
 	const supplierId = await ensureSupplierAvulso(companyId, adminUserId);
+
+	await new EnsureItrKanbanBoardService().execute(companyId, adminUserId);
 
 	await softDeleteExtras({
 		keepUserEmails: [superEmail, adminEmail, clienteEmail],

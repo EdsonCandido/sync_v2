@@ -112,15 +112,26 @@ export class RequireCepGeocodeAccessMiddleware {
 				return;
 			}
 
-			const grant = await this.modulePermissionRepository.findByUserAndModule(
-				userId,
-				"clientes",
-			);
+			const grantClientes =
+				await this.modulePermissionRepository.findByUserAndModule(
+					userId,
+					"clientes",
+				);
+			const grantItr =
+				await this.modulePermissionRepository.findByUserAndModule(
+					userId,
+					"itr",
+				);
 
-			if (!grant?.ativo || !grant.canEdit) {
+			const canEditClientes = Boolean(
+				grantClientes?.ativo && grantClientes.canEdit,
+			);
+			const canEditItr = Boolean(grantItr?.ativo && grantItr.canEdit);
+
+			if (!canEditClientes && !canEditItr) {
 				res
 					.status(403)
-					.json({ message: "Sem permissão de edição em clientes." });
+					.json({ message: "Sem permissão de edição em clientes ou ITR." });
 				return;
 			}
 

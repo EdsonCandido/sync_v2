@@ -4,6 +4,7 @@ export * from "./columns";
 export * from "./companies";
 export * from "./company-dashboard";
 export * from "./financeiro";
+export * from "./itr";
 export * from "./kanban";
 export * from "./module-permissions";
 export * from "./plans";

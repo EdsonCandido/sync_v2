@@ -3,12 +3,14 @@ import { CompanyRepository } from "../repositories/CompanyRepository";
 import { PlanRepository } from "../repositories/PlanRepository";
 import { AppError } from "../utils/AppError";
 import { SeedCompanyFinanceiroDefaultsService } from "./SeedCompanyFinanceiroDefaultsService";
+import { EnsureItrKanbanBoardService } from "./EnsureItrKanbanBoardService";
 
 export class CreateCompanyService {
 	constructor(
 		private readonly companyRepository = new CompanyRepository(),
 		private readonly planRepository = new PlanRepository(),
 		private readonly seedFinanceiroDefaults = new SeedCompanyFinanceiroDefaultsService(),
+		private readonly ensureItrBoard = new EnsureItrKanbanBoardService(),
 	) {}
 
 	async execute(input: CreateCompanyInput, userId: string) {
@@ -49,6 +51,8 @@ export class CreateCompanyService {
 			companyId: company.id,
 			userId,
 		});
+
+		await this.ensureItrBoard.execute(company.id, userId);
 
 		return company;
 	}

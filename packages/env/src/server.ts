@@ -42,6 +42,8 @@ export const env = createEnv({
 		SEED_BANK_AGENCIA: z.string().min(1).optional(),
 		SEED_BANK_CONTA: z.string().min(1).optional(),
 		SEED_SUPPLIER_NAME: z.string().min(1).optional(),
+		/** CNPJ da empresa Helios para consulta pública ITR (fallback: SEED_COMPANY_DOCUMENT). */
+		ITR_PUBLIC_COMPANY_DOCUMENT: z.string().min(1).optional(),
 	},
 	runtimeEnv: process.env,
 	skipValidation: !!process.env.SKIP_ENV_VALIDATION,

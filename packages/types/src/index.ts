@@ -7,6 +7,7 @@ export type UserPerfil = (typeof USER_PERFIS)[number];
 export const APP_MODULES = [
 	"clientes",
 	"financeiro",
+	"itr",
 	"kanban",
 	"usuarios",
 ] as const;
@@ -112,7 +113,52 @@ export const FINANCIAL_ENTRY_KINDS = ["receber", "pagar"] as const;
 
 export type FinancialEntryKind = (typeof FINANCIAL_ENTRY_KINDS)[number];
 
-export const FINANCIAL_ORIGIN_TYPES = ["avulsa", "kanban", "manual"] as const;
+export const FINANCIAL_ORIGIN_TYPES = [
+	"avulsa",
+	"kanban",
+	"manual",
+	"itr",
+] as const;
+
+export const ITR_KANBAN_COLUMN_SLUGS = [
+	"a_fazer",
+	"fazendo",
+	"esperando_pagamento",
+	"pago",
+	"disponivel",
+] as const;
+
+export type ItrKanbanColumnSlug = (typeof ITR_KANBAN_COLUMN_SLUGS)[number];
+
+export const ITR_DOWNLOAD_COLUMN_SLUGS = ["pago", "disponivel"] as const;
+
+export type ItrDownloadColumnSlug = (typeof ITR_DOWNLOAD_COLUMN_SLUGS)[number];
+
+export const ITR_KANBAN_COLUMNS = [
+	{ slug: "a_fazer", name: "A fazer", position: 0 },
+	{ slug: "fazendo", name: "Fazendo", position: 1 },
+	{ slug: "esperando_pagamento", name: "Esperando pagamento", position: 2 },
+	{ slug: "pago", name: "Pago", position: 3 },
+	{ slug: "disponivel", name: "Disponível", position: 4 },
+] as const;
+
+export const ITR_PUBLIC_STATUS_MESSAGES: Record<ItrKanbanColumnSlug, string> = {
+	a_fazer: "aguardando liberação",
+	fazendo: "aguardando liberação",
+	esperando_pagamento: "aguardando liberação",
+	pago: "Pago — disponível para download",
+	disponivel: "Disponível para download",
+};
+
+export const ITR_FILE_KINDS = ["declaracao", "recibo", "anexo"] as const;
+
+export type ItrFileKind = (typeof ITR_FILE_KINDS)[number];
+
+export const ITR_FILE_KIND_LABELS: Record<ItrFileKind, string> = {
+	declaracao: "Declaração",
+	recibo: "Recibo",
+	anexo: "Anexo",
+};
 
 export type FinancialOriginType = (typeof FINANCIAL_ORIGIN_TYPES)[number];
 
