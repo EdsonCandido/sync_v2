@@ -10,6 +10,7 @@ import {
 	LuWallet,
 } from "react-icons/lu";
 
+import { ReceitaFederalIcon } from "@/components/icons/ReceitaFederalIcon";
 import type { ModuleKey } from "@/lib/module-permissions-api";
 
 export type DashboardModule = {
@@ -42,6 +43,13 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
 		path: "/dashboard/clientes",
 		icon: LuClipboardList,
 		moduleKey: "clientes",
+	},
+	{
+		id: "itr",
+		label: "ITR",
+		path: "/dashboard/itr",
+		icon: ReceitaFederalIcon,
+		moduleKey: "itr",
 	},
 	{
 		id: "kanban",

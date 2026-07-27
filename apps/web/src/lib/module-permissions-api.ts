@@ -1,6 +1,11 @@
 import { apiFetch } from "./api";
 
-export type ModuleKey = "clientes" | "financeiro" | "kanban" | "usuarios";
+export type ModuleKey =
+	| "clientes"
+	| "financeiro"
+	| "itr"
+	| "kanban"
+	| "usuarios";
 
 export type ModulePermissionItem = {
 	moduleKey: ModuleKey;

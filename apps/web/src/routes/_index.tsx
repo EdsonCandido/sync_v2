@@ -104,6 +104,9 @@ export default function Home() {
 							<Link to="/login">Entrar</Link>
 						</Button>
 						<Button asChild size="lg" variant="outline" colorPalette="gray">
+							<Link to="/consultar-itr">Consultar ITR</Link>
+						</Button>
+						<Button asChild size="lg" variant="outline" colorPalette="gray">
 							<Link to="/contato">Falar conosco</Link>
 						</Button>
 					</Flex>

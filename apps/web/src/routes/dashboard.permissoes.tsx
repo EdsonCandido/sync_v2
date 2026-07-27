@@ -24,6 +24,7 @@ import {
 const MODULE_LABELS: Record<ModuleKey, string> = {
 	clientes: "Clientes",
 	financeiro: "Financeiro",
+	itr: "ITR",
 	kanban: "Kanban",
 	usuarios: "Usuários",
 };
@@ -31,6 +32,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
 const MODULE_KEYS: ModuleKey[] = [
 	"clientes",
 	"financeiro",
+	"itr",
 	"kanban",
 	"usuarios",
 ];

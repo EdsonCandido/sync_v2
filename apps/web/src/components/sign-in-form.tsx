@@ -214,6 +214,10 @@ export default function SignInForm() {
 					</Stack>
 				</form>
 
+				<Button asChild variant="outline" colorPalette="teal" w="full">
+					<Link to="/consultar-itr">Consultar ITR</Link>
+				</Button>
+
 				<Button asChild variant="plain" colorPalette="teal" mx="auto">
 					<Link to="/">Voltar ao início</Link>
 				</Button>
