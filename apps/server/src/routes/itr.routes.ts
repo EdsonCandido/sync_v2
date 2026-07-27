@@ -16,6 +16,11 @@ export const itrRoutes = Router();
 itrRoutes.use((req, res, next) => requireAuth.handle(req, res, next));
 
 itrRoutes.get("/", readAccess.handle, controller.list);
+itrRoutes.get(
+	"/clients/by-document/:document",
+	readAccess.handle,
+	controller.findClientByDocument,
+);
 itrRoutes.get("/:id", readAccess.handle, controller.find);
 itrRoutes.post(
 	"/",
@@ -27,6 +32,7 @@ itrRoutes.post(
 	]),
 	controller.create,
 );
+itrRoutes.patch("/:id", editAccess.handle, controller.update);
 itrRoutes.delete("/:id", editAccess.handle, controller.softDelete);
 
 itrRoutes.post(

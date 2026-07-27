@@ -134,6 +134,34 @@ export class ItrProcessRepository {
 		return row;
 	}
 
+	async update(
+		id: string,
+		companyId: string,
+		data: {
+			observacoes?: string | null;
+			updatedBy?: string | null;
+		},
+	) {
+		const [row] = await db
+			.update(itrProcesses)
+			.set({
+				...(data.observacoes !== undefined
+					? { observacoes: data.observacoes }
+					: {}),
+				updatedBy: data.updatedBy ?? null,
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(itrProcesses.id, id),
+					eq(itrProcesses.companyId, companyId),
+					eq(itrProcesses.ativo, true),
+				),
+			)
+			.returning();
+		return row ?? null;
+	}
+
 	async softDelete(id: string, companyId: string, updatedBy?: string | null) {
 		const [row] = await db
 			.update(itrProcesses)
@@ -268,5 +296,18 @@ export class ItrFileRepository {
 			.update(itrFiles)
 			.set({ ativo: false, updatedAt: new Date() })
 			.where(and(eq(itrFiles.processId, processId), eq(itrFiles.ativo, true)));
+	}
+
+	async softDeleteByProcessAndKind(processId: string, kind: string) {
+		await db
+			.update(itrFiles)
+			.set({ ativo: false, updatedAt: new Date() })
+			.where(
+				and(
+					eq(itrFiles.processId, processId),
+					eq(itrFiles.kind, kind),
+					eq(itrFiles.ativo, true),
+				),
+			);
 	}
 }

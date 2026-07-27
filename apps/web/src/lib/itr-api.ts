@@ -37,7 +37,19 @@ export type CreateItrProcessInput = {
 	phone?: string;
 	valor: number;
 	observacoes?: string | null;
-	dataVencimento?: string;
+	dataVencimento: string;
+};
+
+export type UpdateItrProcessInput = {
+	observacoes?: string | null;
+};
+
+export type ItrClientLookup = {
+	id: string;
+	document: string;
+	name: string;
+	email: string;
+	phone: string;
 };
 
 export type PublicItrConsultItem = {
@@ -80,6 +92,11 @@ export const itrApi = {
 
 	find: (id: string) => apiFetch<ItrProcess>(`/api/itr/${id}`),
 
+	lookupClientByDocument: (document: string) =>
+		apiFetch<{ client: ItrClientLookup | null }>(
+			`/api/itr/clients/by-document/${encodeURIComponent(document.replace(/\D/g, ""))}`,
+		),
+
 	create: (
 		input: CreateItrProcessInput,
 		files: {
@@ -104,12 +121,23 @@ export const itrApi = {
 		});
 	},
 
+	update: (id: string, body: UpdateItrProcessInput) =>
+		apiFetch<ItrProcess>(`/api/itr/${id}`, {
+			method: "PATCH",
+			body: JSON.stringify(body),
+		}),
+
 	remove: (id: string) =>
 		apiFetch<{ ok: boolean }>(`/api/itr/${id}`, { method: "DELETE" }),
 
-	uploadFile: (processId: string, file: File) => {
+	uploadFile: (
+		processId: string,
+		file: File,
+		kind: ItrFileKind = "anexo",
+	) => {
 		const form = new FormData();
 		form.append("file", file);
+		form.append("kind", kind);
 		return apiFetch<ItrFileMeta>(`/api/itr/${processId}/files`, {
 			method: "POST",
 			body: form,

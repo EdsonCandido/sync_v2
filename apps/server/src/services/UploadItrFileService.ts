@@ -1,3 +1,4 @@
+import type { ItrFileKind } from "@sync_v2/types";
 import {
 	ItrFileRepository,
 	ItrProcessRepository,
@@ -34,7 +35,7 @@ export class UploadItrFileService {
 	async execute(
 		processId: string,
 		file: ItrUploadFile,
-		params: { companyId: string; userId: string },
+		params: { companyId: string; userId: string; kind?: ItrFileKind },
 	) {
 		const process = await this.processRepository.findById(
 			processId,
@@ -55,6 +56,13 @@ export class UploadItrFileService {
 			throw new AppError(400, "Tipo de arquivo não permitido.");
 		}
 
+		const kind: ItrFileKind = params.kind ?? "anexo";
+		const replacing = kind === "declaracao" || kind === "recibo";
+
+		if (replacing) {
+			await this.fileRepository.softDeleteByProcessAndKind(processId, kind);
+		}
+
 		const activeCount =
 			await this.fileRepository.countActiveByProcess(processId);
 		if (activeCount >= MAX_FILES) {
@@ -64,7 +72,7 @@ export class UploadItrFileService {
 		const originalName = sanitizeFileName(file.originalname);
 		const row = await this.fileRepository.create({
 			processId,
-			kind: "anexo",
+			kind,
 			originalName,
 			mimeType,
 			sizeBytes: file.size,

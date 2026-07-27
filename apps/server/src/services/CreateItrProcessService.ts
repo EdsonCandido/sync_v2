@@ -114,9 +114,7 @@ export class CreateItrProcessService {
 		});
 
 		const now = new Date();
-		const vencimento =
-			input.dataVencimento ??
-			new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+		const vencimento = input.dataVencimento ?? now;
 
 		const entry = await this.createFinancialEntry.execute(
 			{

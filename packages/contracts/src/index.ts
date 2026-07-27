@@ -1331,7 +1331,7 @@ export const createItrProcessSchema = z
 			}, "Telefone deve ter 10 ou 11 dígitos."),
 		valor: z.coerce.number().positive(),
 		observacoes: z.string().optional().nullable(),
-		dataVencimento: z.coerce.date().optional(),
+		dataVencimento: z.coerce.date(),
 	})
 	.superRefine((data, ctx) => {
 		if (data.clientId) return;
@@ -1358,6 +1358,39 @@ export const createItrProcessSchema = z
 	});
 
 export type CreateItrProcessInput = z.infer<typeof createItrProcessSchema>;
+
+export const updateItrProcessSchema = z.object({
+	observacoes: z.string().optional().nullable(),
+});
+
+export type UpdateItrProcessInput = z.infer<typeof updateItrProcessSchema>;
+
+export const uploadItrFileSchema = z.object({
+	kind: z.enum(["declaracao", "recibo", "anexo"]).default("anexo"),
+});
+
+export type UploadItrFileInput = z.infer<typeof uploadItrFileSchema>;
+
+export const itrClientByDocumentParamSchema = z.object({
+	document: z
+		.string()
+		.transform((v) => v.replace(/\D/g, ""))
+		.refine((v) => v.length === 11, "CPF deve ter 11 dígitos."),
+});
+
+export type ItrClientByDocumentParam = z.infer<
+	typeof itrClientByDocumentParamSchema
+>;
+
+export const itrClientLookupSchema = z.object({
+	id: z.string().uuid(),
+	document: z.string(),
+	name: z.string(),
+	email: z.string(),
+	phone: z.string(),
+});
+
+export type ItrClientLookup = z.infer<typeof itrClientLookupSchema>;
 
 export const listItrProcessesQuerySchema = z.object({
 	q: z.string().optional(),

@@ -8,14 +8,14 @@ import {
 	Text,
 } from "@chakra-ui/react";
 import { useForm } from "@tanstack/react-form";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import z from "zod";
 
 import { MoneyInput } from "@/components/ui/money-input";
 import { toaster } from "@/components/ui/toaster";
 import { ApiError } from "@/lib/api";
 import { maskCpfInput, parseCpfDigits } from "@/lib/cpf";
-import type { CreateItrProcessInput } from "@/lib/itr-api";
+import { type CreateItrProcessInput, itrApi } from "@/lib/itr-api";
 import { parseMoneyInput } from "@/lib/money";
 import { maskPhoneInput, parsePhoneDigits } from "@/lib/phone";
 
@@ -32,6 +32,7 @@ const itrFormSchema = z.object({
 			return d.length >= 10 && d.length <= 11;
 		}, "Telefone inválido"),
 	valor: z.string().min(1, "Obrigatório"),
+	dataVencimento: z.string().min(1, "Data de vencimento obrigatória"),
 	observacoes: z.string().optional(),
 });
 
@@ -50,12 +51,17 @@ type ItrFormDialogProps = {
 	) => Promise<void>;
 };
 
+function todayInputValue() {
+	return new Date().toISOString().slice(0, 10);
+}
+
 const emptyValues: ItrFormValues = {
 	document: "",
 	name: "",
 	email: "",
 	phone: "",
 	valor: "",
+	dataVencimento: todayInputValue(),
 	observacoes: "",
 };
 
@@ -67,6 +73,11 @@ export function ItrFormDialog({
 	const [declaracao, setDeclaracao] = useState<File | null>(null);
 	const [recibo, setRecibo] = useState<File | null>(null);
 	const [anexos, setAnexos] = useState<File[]>([]);
+	const [clientId, setClientId] = useState<string | null>(null);
+	const [lookupStatus, setLookupStatus] = useState<
+		"idle" | "loading" | "found" | "new"
+	>("idle");
+	const lookupSeq = useRef(0);
 
 	const form = useForm({
 		defaultValues: emptyValues,
@@ -86,20 +97,30 @@ export function ItrFormDialog({
 			}
 			try {
 				await onSubmit(
-					{
-						document: parseCpfDigits(parsed.data.document),
-						name: parsed.data.name.trim(),
-						email: parsed.data.email.trim().toLowerCase(),
-						phone: parsePhoneDigits(parsed.data.phone),
-						valor,
-						observacoes: parsed.data.observacoes?.trim() || null,
-					},
+					clientId
+						? {
+								clientId,
+								valor,
+								dataVencimento: parsed.data.dataVencimento,
+								observacoes: parsed.data.observacoes?.trim() || null,
+							}
+						: {
+								document: parseCpfDigits(parsed.data.document),
+								name: parsed.data.name.trim(),
+								email: parsed.data.email.trim().toLowerCase(),
+								phone: parsePhoneDigits(parsed.data.phone),
+								valor,
+								dataVencimento: parsed.data.dataVencimento,
+								observacoes: parsed.data.observacoes?.trim() || null,
+							},
 					{ declaracao, recibo, anexos },
 				);
 				form.reset();
 				setDeclaracao(null);
 				setRecibo(null);
 				setAnexos([]);
+				setClientId(null);
+				setLookupStatus("idle");
 			} catch (error) {
 				if (!(error instanceof ApiError)) {
 					toaster.create({ title: "Erro ao salvar", type: "error" });
@@ -109,14 +130,69 @@ export function ItrFormDialog({
 		},
 	});
 
+	function clearClientFields() {
+		setClientId(null);
+		setLookupStatus("idle");
+		form.setFieldValue("name", "");
+		form.setFieldValue("email", "");
+		form.setFieldValue("phone", "");
+	}
+
+	async function lookupByCpf(rawDocument: string) {
+		const digits = parseCpfDigits(rawDocument);
+		if (digits.length !== 11) {
+			clearClientFields();
+			return;
+		}
+
+		const seq = ++lookupSeq.current;
+		setLookupStatus("loading");
+		try {
+			const result = await itrApi.lookupClientByDocument(digits);
+			if (seq !== lookupSeq.current) return;
+
+			if (result.client) {
+				setClientId(result.client.id);
+				setLookupStatus("found");
+				form.setFieldValue("name", result.client.name);
+				form.setFieldValue("email", result.client.email);
+				form.setFieldValue("phone", maskPhoneInput(result.client.phone));
+			} else {
+				setClientId(null);
+				setLookupStatus("new");
+				form.setFieldValue("name", "");
+				form.setFieldValue("email", "");
+				form.setFieldValue("phone", "");
+			}
+		} catch (error) {
+			if (seq !== lookupSeq.current) return;
+			setClientId(null);
+			setLookupStatus("idle");
+			toaster.create({
+				title:
+					error instanceof ApiError
+						? error.message
+						: "Erro ao buscar cliente",
+				type: "error",
+			});
+		}
+	}
+
 	useEffect(() => {
 		if (!open) {
 			form.reset();
 			setDeclaracao(null);
 			setRecibo(null);
 			setAnexos([]);
+			setClientId(null);
+			setLookupStatus("idle");
+			lookupSeq.current += 1;
+		} else {
+			form.setFieldValue("dataVencimento", todayInputValue());
 		}
 	}, [open, form]);
+
+	const clientFieldsReadOnly = clientId !== null;
 
 	return (
 		<Dialog.Root open={open} onOpenChange={(e) => onOpenChange(e.open)}>
@@ -145,11 +221,37 @@ export function ItrFormDialog({
 												inputMode="numeric"
 												placeholder="000.000.000-00"
 												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={(e) =>
-													field.handleChange(maskCpfInput(e.target.value))
-												}
+												onBlur={() => {
+													field.handleBlur();
+													void lookupByCpf(field.state.value);
+												}}
+												onChange={(e) => {
+													const masked = maskCpfInput(e.target.value);
+													field.handleChange(masked);
+													const digits = parseCpfDigits(masked);
+													if (digits.length < 11 && clientId) {
+														clearClientFields();
+													}
+													if (digits.length === 11) {
+														void lookupByCpf(masked);
+													}
+												}}
 											/>
+											{lookupStatus === "loading" && (
+												<Text fontSize="sm" color="fg.muted" mt={1}>
+													Buscando cliente…
+												</Text>
+											)}
+											{lookupStatus === "found" && (
+												<Text fontSize="sm" color="fg.muted" mt={1}>
+													Cliente encontrado
+												</Text>
+											)}
+											{lookupStatus === "new" && (
+												<Text fontSize="sm" color="fg.muted" mt={1}>
+													Novo cliente — preencha os dados
+												</Text>
+											)}
 										</Field.Root>
 									)}
 								</form.Field>
@@ -159,6 +261,7 @@ export function ItrFormDialog({
 											<Field.Label>Nome</Field.Label>
 											<Input
 												value={field.state.value}
+												readOnly={clientFieldsReadOnly}
 												onBlur={field.handleBlur}
 												onChange={(e) => field.handleChange(e.target.value)}
 											/>
@@ -178,6 +281,7 @@ export function ItrFormDialog({
 													type="email"
 													autoComplete="email"
 													value={field.state.value}
+													readOnly={clientFieldsReadOnly}
 													onBlur={field.handleBlur}
 													onChange={(e) => field.handleChange(e.target.value)}
 												/>
@@ -192,6 +296,7 @@ export function ItrFormDialog({
 													inputMode="tel"
 													placeholder="(11) 98765-4321"
 													value={field.state.value}
+													readOnly={clientFieldsReadOnly}
 													onBlur={field.handleBlur}
 													onChange={(e) =>
 														field.handleChange(maskPhoneInput(e.target.value))
@@ -201,19 +306,38 @@ export function ItrFormDialog({
 										)}
 									</form.Field>
 								</HStack>
-								<form.Field name="valor">
-									{(field) => (
-										<Field.Root>
-											<Field.Label>Valor (R$)</Field.Label>
-											<MoneyInput
-												placeholder="R$ 0,00"
-												value={field.state.value}
-												onBlur={field.handleBlur}
-												onChange={(masked) => field.handleChange(masked)}
-											/>
-										</Field.Root>
-									)}
-								</form.Field>
+								<HStack
+									gap={3}
+									align="start"
+									flexDir={{ base: "column", md: "row" }}
+								>
+									<form.Field name="valor">
+										{(field) => (
+											<Field.Root flex="1">
+												<Field.Label>Valor (R$)</Field.Label>
+												<MoneyInput
+													placeholder="R$ 0,00"
+													value={field.state.value}
+													onBlur={field.handleBlur}
+													onChange={(masked) => field.handleChange(masked)}
+												/>
+											</Field.Root>
+										)}
+									</form.Field>
+									<form.Field name="dataVencimento">
+										{(field) => (
+											<Field.Root flex="1">
+												<Field.Label>Data de vencimento</Field.Label>
+												<Input
+													type="date"
+													value={field.state.value}
+													onBlur={field.handleBlur}
+													onChange={(e) => field.handleChange(e.target.value)}
+												/>
+											</Field.Root>
+										)}
+									</form.Field>
+								</HStack>
 								<form.Field name="observacoes">
 									{(field) => (
 										<Field.Root>

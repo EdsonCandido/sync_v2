@@ -1,6 +1,7 @@
 import {
 	Button,
 	Dialog,
+	Field,
 	Heading,
 	HStack,
 	IconButton,
@@ -23,6 +24,7 @@ import { formatCpf } from "@/lib/cpf";
 import {
 	type CreateItrProcessInput,
 	ITR_FILE_KIND_LABELS,
+	type ItrFileKind,
 	type ItrProcess,
 	itrApi,
 } from "@/lib/itr-api";
@@ -48,6 +50,8 @@ function ItrPageContent() {
 
 	const [formOpen, setFormOpen] = useState(false);
 	const [detail, setDetail] = useState<ItrProcess | null>(null);
+	const [editObs, setEditObs] = useState("");
+	const [savingObs, setSavingObs] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selected, setSelected] = useState<ItrProcess | null>(null);
 
@@ -146,12 +150,23 @@ function ItrPageContent() {
 		}
 	}
 
-	async function handleUploadExtra(processId: string, file: File) {
+	async function handleUploadExtra(
+		processId: string,
+		file: File,
+		kind: ItrFileKind,
+	) {
 		try {
-			await itrApi.uploadFile(processId, file);
-			toaster.create({ title: "Arquivo enviado", type: "success" });
+			await itrApi.uploadFile(processId, file, kind);
+			toaster.create({
+				title:
+					kind === "anexo"
+						? "Arquivo enviado"
+						: `${ITR_FILE_KIND_LABELS[kind]} atualizado`,
+				type: "success",
+			});
 			const updated = await itrApi.find(processId);
 			setDetail(updated);
+			setEditObs(updated.observacoes ?? "");
 			await load();
 		} catch (error) {
 			toaster.create({
@@ -161,12 +176,34 @@ function ItrPageContent() {
 		}
 	}
 
+	async function handleSaveObs() {
+		if (!detail) return;
+		setSavingObs(true);
+		try {
+			const updated = await itrApi.update(detail.id, {
+				observacoes: editObs.trim() || null,
+			});
+			setDetail(updated);
+			setEditObs(updated.observacoes ?? "");
+			toaster.create({ title: "Observações salvas", type: "success" });
+			await load();
+		} catch (error) {
+			toaster.create({
+				title: error instanceof ApiError ? error.message : "Erro ao salvar",
+				type: "error",
+			});
+		} finally {
+			setSavingObs(false);
+		}
+	}
+
 	async function handleRemoveFile(processId: string, fileId: string) {
 		try {
 			await itrApi.removeFile(processId, fileId);
 			toaster.create({ title: "Arquivo removido", type: "success" });
 			const updated = await itrApi.find(processId);
 			setDetail(updated);
+			setEditObs(updated.observacoes ?? "");
 			await load();
 		} catch (error) {
 			toaster.create({
@@ -259,7 +296,10 @@ function ItrPageContent() {
 											<Button
 												size="xs"
 												variant="ghost"
-												onClick={() => setDetail(item)}
+												onClick={() => {
+													setDetail(item);
+													setEditObs(item.observacoes ?? "");
+												}}
 											>
 												Ver
 											</Button>
@@ -321,7 +361,10 @@ function ItrPageContent() {
 			<Dialog.Root
 				open={!!detail}
 				onOpenChange={(e) => {
-					if (!e.open) setDetail(null);
+					if (!e.open) {
+						setDetail(null);
+						setEditObs("");
+					}
 				}}
 			>
 				<Dialog.Backdrop />
@@ -338,6 +381,27 @@ function ItrPageContent() {
 										CPF {formatCpf(detail.clientDocument)} ·{" "}
 										{formatMoney(detail.valor)} · {detail.columnName}
 									</Text>
+									{allowEdit ? (
+										<Field.Root>
+											<Field.Label>Observações</Field.Label>
+											<Input
+												value={editObs}
+												onChange={(e) => setEditObs(e.target.value)}
+											/>
+											<Button
+												mt={2}
+												size="sm"
+												bg="helios.solid"
+												color="helios.contrast"
+												loading={savingObs}
+												onClick={() => void handleSaveObs()}
+											>
+												Salvar observações
+											</Button>
+										</Field.Root>
+									) : detail.observacoes ? (
+										<Text fontSize="sm">{detail.observacoes}</Text>
+									) : null}
 									<Stack gap={2}>
 										{detail.files.map((file) => (
 											<HStack key={file.id} justify="space-between">
@@ -376,16 +440,55 @@ function ItrPageContent() {
 												</HStack>
 											</HStack>
 										))}
+										{detail.files.length === 0 && (
+											<Text fontSize="sm" color="fg.muted">
+												Nenhum arquivo.
+											</Text>
+										)}
 									</Stack>
 									{allowEdit && (
-										<Input
-											type="file"
-											onChange={(e) => {
-												const file = e.target.files?.[0];
-												if (file) void handleUploadExtra(detail.id, file);
-												e.target.value = "";
-											}}
-										/>
+										<Stack gap={3}>
+											<Field.Root>
+												<Field.Label>Substituir declaração</Field.Label>
+												<Input
+													type="file"
+													onChange={(e) => {
+														const file = e.target.files?.[0];
+														if (file)
+															void handleUploadExtra(
+																detail.id,
+																file,
+																"declaracao",
+															);
+														e.target.value = "";
+													}}
+												/>
+											</Field.Root>
+											<Field.Root>
+												<Field.Label>Substituir recibo</Field.Label>
+												<Input
+													type="file"
+													onChange={(e) => {
+														const file = e.target.files?.[0];
+														if (file)
+															void handleUploadExtra(detail.id, file, "recibo");
+														e.target.value = "";
+													}}
+												/>
+											</Field.Root>
+											<Field.Root>
+												<Field.Label>Adicionar anexo</Field.Label>
+												<Input
+													type="file"
+													onChange={(e) => {
+														const file = e.target.files?.[0];
+														if (file)
+															void handleUploadExtra(detail.id, file, "anexo");
+														e.target.value = "";
+													}}
+												/>
+											</Field.Root>
+										</Stack>
 									)}
 								</Stack>
 							)}
