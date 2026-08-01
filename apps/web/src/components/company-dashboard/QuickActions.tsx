@@ -82,12 +82,19 @@ export function QuickActions() {
 						px={4}
 						flexDir="column"
 						gap={2}
-						borderRadius="2xl"
+						borderRadius="heliosXl"
 						borderColor="border"
-						bg="bg.panel"
+						bg="helios.panel"
+						shadow="heliosSm"
 						_hover={{
 							borderColor: "helios.border",
 							bg: "helios.subtle",
+							shadow: "solarGlowSoft",
+						}}
+						_focusVisible={{
+							outline: "2px solid",
+							outlineColor: "helios.focusRing",
+							outlineOffset: "2px",
 						}}
 						onClick={() => handleAction(action.path, action.label)}
 					>

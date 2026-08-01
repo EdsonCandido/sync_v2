@@ -13,7 +13,7 @@ export default function UserMenu() {
 
 	if (!session) {
 		return (
-			<Button asChild variant="outline" size="sm" colorPalette="teal">
+			<Button asChild variant="outline" size="sm" colorPalette="helios">
 				<Link to="/login">Entrar</Link>
 			</Button>
 		);

@@ -130,11 +130,7 @@ export const itrApi = {
 	remove: (id: string) =>
 		apiFetch<{ ok: boolean }>(`/api/itr/${id}`, { method: "DELETE" }),
 
-	uploadFile: (
-		processId: string,
-		file: File,
-		kind: ItrFileKind = "anexo",
-	) => {
+	uploadFile: (processId: string, file: File, kind: ItrFileKind = "anexo") => {
 		const form = new FormData();
 		form.append("file", file);
 		form.append("kind", kind);

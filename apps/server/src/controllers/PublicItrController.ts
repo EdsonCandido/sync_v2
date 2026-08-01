@@ -1,6 +1,4 @@
-import {
-	publicItrConsultQuerySchema,
-} from "@sync_v2/contracts";
+import { publicItrConsultQuerySchema } from "@sync_v2/contracts";
 import type { Request, Response } from "express";
 import {
 	PublicConsultItrService,

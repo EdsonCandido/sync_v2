@@ -10,10 +10,7 @@ export class SoftDeleteItrProcessService {
 		private readonly fileRepository = new ItrFileRepository(),
 	) {}
 
-	async execute(
-		id: string,
-		params: { companyId: string; userId: string },
-	) {
+	async execute(id: string, params: { companyId: string; userId: string }) {
 		const existing = await this.processRepository.findById(
 			id,
 			params.companyId,

@@ -3,9 +3,9 @@ import { KanbanBoardRepository } from "../repositories/KanbanBoardRepository";
 import { KanbanCardRepository } from "../repositories/KanbanCardRepository";
 import { KanbanColumnRepository } from "../repositories/KanbanColumnRepository";
 import { AppError } from "../utils/AppError";
-import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 import { EnsureBaseKanbanColumnsService } from "./EnsureBaseKanbanColumnsService";
 import { EnsureDefaultKanbanBoardService } from "./EnsureDefaultKanbanBoardService";
+import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 
 function mapCard(
 	card: Awaited<ReturnType<KanbanCardRepository["listByCompany"]>>[number],

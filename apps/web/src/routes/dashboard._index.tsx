@@ -1,10 +1,16 @@
-import { Box, Heading, Text } from "@chakra-ui/react";
+import { Box, Stack, Text } from "@chakra-ui/react";
 import { useCallback, useEffect, useState } from "react";
 
 import { CompanyAdminDashboard } from "@/components/company-dashboard/CompanyAdminDashboard";
 import { DashboardEmptyState } from "@/components/company-dashboard/DashboardEmptyState";
 import { DashboardErrorState } from "@/components/company-dashboard/DashboardErrorState";
 import { DashboardSkeleton } from "@/components/company-dashboard/DashboardSkeleton";
+import {
+	MockAlertsWidget,
+	MockFavoritesWidget,
+	MockGoalsWidget,
+} from "@/components/company-dashboard/mocks/MockWidgets";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -14,48 +20,26 @@ import {
 
 function WelcomeHome({ name }: { name: string }) {
 	return (
-		<Box
-			maxW="2xl"
-			animation="fade-in 0.5s ease-out"
-			css={{
-				"@keyframes fade-in": {
-					from: { opacity: 0, transform: "translateY(8px)" },
-					to: { opacity: 1, transform: "translateY(0)" },
-				},
-			}}
-		>
-			<Text
-				fontSize="sm"
-				fontWeight="600"
-				color="helios.fg"
-				letterSpacing="0.06em"
-				textTransform="uppercase"
-				mb={3}
-			>
-				Bem-vindo
-			</Text>
-			<Heading
-				as="h1"
-				size="2xl"
-				fontFamily="heading"
-				fontWeight="800"
-				letterSpacing="-0.03em"
-				lineHeight="1.15"
-				color="fg"
-			>
-				{name ? `Olá, ${name}.` : "Olá."}
-			</Heading>
-			<Text mt={4} fontSize="lg" color="fg.muted" maxW="lg" lineHeight="tall">
-				Selecione um módulo no menu lateral para começar.
-			</Text>
-			<Box
-				mt={8}
-				h="1px"
-				w="24"
-				bgGradient="to-r"
-				gradientFrom="helios.solid"
-				gradientTo="transparent"
-			/>
+		<Box maxW="7xl" mx="auto">
+			<Stack gap={8}>
+				<PageHeader
+					eyebrow="Bem-vindo"
+					title={name ? `Olá, ${name}.` : "Olá."}
+					description="Selecione um módulo no menu lateral para começar."
+				/>
+				<Box
+					display="grid"
+					gridTemplateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
+					gap={4}
+				>
+					<MockFavoritesWidget />
+					<MockGoalsWidget />
+					<MockAlertsWidget />
+				</Box>
+				<Text fontSize="sm" color="fg.muted">
+					Widgets acimaativos — preview da experiência Helios Labs.
+				</Text>
+			</Stack>
 		</Box>
 	);
 }

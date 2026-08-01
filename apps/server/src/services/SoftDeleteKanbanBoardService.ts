@@ -2,9 +2,7 @@ import { KanbanBoardRepository } from "../repositories/KanbanBoardRepository";
 import { AppError } from "../utils/AppError";
 
 export class SoftDeleteKanbanBoardService {
-	constructor(
-		private readonly boardRepository = new KanbanBoardRepository(),
-	) {}
+	constructor(private readonly boardRepository = new KanbanBoardRepository()) {}
 
 	async execute(
 		boardId: string,
@@ -14,7 +12,10 @@ export class SoftDeleteKanbanBoardService {
 			throw new AppError(403, "Apenas admin pode excluir kanbans.");
 		}
 
-		const board = await this.boardRepository.findById(boardId, params.companyId);
+		const board = await this.boardRepository.findById(
+			boardId,
+			params.companyId,
+		);
 		if (!board) {
 			throw new AppError(404, "Kanban não encontrado.");
 		}

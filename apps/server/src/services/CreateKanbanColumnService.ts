@@ -2,8 +2,8 @@ import type { CreateKanbanColumnInput } from "@sync_v2/contracts";
 import { KanbanBoardRepository } from "../repositories/KanbanBoardRepository";
 import { KanbanColumnRepository } from "../repositories/KanbanColumnRepository";
 import { AppError } from "../utils/AppError";
-import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 import { EnsureBaseKanbanColumnsService } from "./EnsureBaseKanbanColumnsService";
+import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 
 export class CreateKanbanColumnService {
 	constructor(

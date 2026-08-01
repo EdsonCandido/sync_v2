@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { ItrController } from "../controllers/ItrController";
 import {
-	itrFileUpload,
 	itrFilesUpload,
+	itrFileUpload,
 } from "../middlewares/ItrFileUploadMiddleware";
 import { requireAuth } from "../middlewares/RequireAuthMiddleware";
 import { requireModuleAccess } from "../middlewares/RequireModuleAccessMiddleware";
@@ -41,11 +41,7 @@ itrRoutes.post(
 	itrFileUpload.single("file"),
 	controller.uploadFile,
 );
-itrRoutes.get(
-	"/:id/files/:fileId",
-	readAccess.handle,
-	controller.downloadFile,
-);
+itrRoutes.get("/:id/files/:fileId", readAccess.handle, controller.downloadFile);
 itrRoutes.delete(
 	"/:id/files/:fileId",
 	editAccess.handle,

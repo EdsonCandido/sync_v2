@@ -178,7 +178,7 @@ export default function SignInForm() {
 							<Button
 								type="button"
 								variant="plain"
-								colorPalette="teal"
+								colorPalette="helios"
 								size="sm"
 								px={0}
 								onClick={() =>
@@ -203,7 +203,7 @@ export default function SignInForm() {
 							{({ canSubmit, isSubmitting }) => (
 								<Button
 									type="submit"
-									colorPalette="teal"
+									colorPalette="helios"
 									w="full"
 									disabled={!canSubmit || isSubmitting}
 								>
@@ -214,11 +214,11 @@ export default function SignInForm() {
 					</Stack>
 				</form>
 
-				<Button asChild variant="outline" colorPalette="teal" w="full">
+				<Button asChild variant="outline" colorPalette="helios" w="full">
 					<Link to="/consultar-itr">Consultar ITR</Link>
 				</Button>
 
-				<Button asChild variant="plain" colorPalette="teal" mx="auto">
+				<Button asChild variant="plain" colorPalette="helios" mx="auto">
 					<Link to="/">Voltar ao início</Link>
 				</Button>
 			</Stack>

@@ -80,9 +80,7 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 	const [loading, setLoading] = useState(true);
 
 	const [formOpen, setFormOpen] = useState(false);
-	const [editingEntry, setEditingEntry] = useState<FinancialEntry | null>(
-		null,
-	);
+	const [editingEntry, setEditingEntry] = useState<FinancialEntry | null>(null);
 	const [selected, setSelected] = useState<FinancialEntry | null>(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [cancelOpen, setCancelOpen] = useState(false);

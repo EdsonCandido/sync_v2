@@ -1,46 +1,52 @@
-import { Box, Flex, HStack, Separator, Text } from "@chakra-ui/react";
+import { Box, Flex, HStack, Separator } from "@chakra-ui/react";
 import { NavLink } from "react-router";
 
+import { BrandMark } from "./ui/BrandMark";
 import { ColorModeButton } from "./ui/color-mode";
 import UserMenu from "./user-menu";
 
 export default function Header() {
 	const links = [
-		{ to: "/", label: "Início" },
-		{ to: "/contato", label: "Contato" },
+		{ to: "/", label: "Início", end: true },
+		{ to: "/#recursos", label: "Recursos", end: false },
+		{ to: "/contato", label: "Contato", end: false },
+		{ to: "/login", label: "Entrar", end: false },
 	] as const;
 
 	return (
-		<Box>
+		<Box
+			as="header"
+			position="sticky"
+			top={0}
+			zIndex={20}
+			bg="dash.navbar"
+			backdropFilter="blur(14px)"
+			borderBottomWidth="1px"
+			borderColor="border"
+		>
 			<Flex
 				align="center"
 				justify="space-between"
-				px={{ base: 3, md: 4 }}
-				py={2}
+				px={{ base: 4, md: 6 }}
+				py={3}
+				maxW="7xl"
+				mx="auto"
+				w="full"
 			>
-				<HStack as="nav" gap={{ base: 3, md: 5 }} fontSize="md">
-					<NavLink to="/" end>
-						{() => (
-							<Text
-								fontWeight="800"
-								letterSpacing="-0.03em"
-								fontSize="lg"
-								fontFamily="heading"
-							>
-								Sync
-							</Text>
-						)}
-					</NavLink>
-					{links.map(({ to, label }) => (
-						<NavLink key={to} to={to} end={to === "/"}>
+				<HStack as="nav" gap={{ base: 4, md: 6 }} fontSize="sm" flexWrap="wrap">
+					<BrandMark size="sm" showTagline={false} />
+					{links.map(({ to, label, end }) => (
+						<NavLink key={to} to={to} end={end}>
 							{({ isActive }) => (
-								<Text
+								<Box
 									as="span"
-									fontWeight={isActive ? "semibold" : "normal"}
-									color="fg.muted"
+									fontWeight={isActive ? "semibold" : "medium"}
+									color={isActive ? "helios.fg" : "fg.muted"}
+									_hover={{ color: "helios.fg" }}
+									transition="color 0.15s ease"
 								>
 									{label}
-								</Text>
+								</Box>
 							)}
 						</NavLink>
 					))}
@@ -50,7 +56,7 @@ export default function Header() {
 					<UserMenu />
 				</HStack>
 			</Flex>
-			<Separator />
+			<Separator display="none" />
 		</Box>
 	);
 }

@@ -337,7 +337,10 @@ async function ensureFinanceiroBase(companyId: string, userId: string) {
 			.select()
 			.from(costCenters)
 			.where(
-				and(eq(costCenters.companyId, companyId), eq(costCenters.codigo, cc.codigo)),
+				and(
+					eq(costCenters.companyId, companyId),
+					eq(costCenters.codigo, cc.codigo),
+				),
 			)
 			.limit(1);
 
@@ -372,10 +375,7 @@ async function ensureFinanceiroBase(companyId: string, userId: string) {
 		.select()
 		.from(bankAccounts)
 		.where(
-			and(
-				eq(bankAccounts.companyId, companyId),
-				eq(bankAccounts.conta, conta),
-			),
+			and(eq(bankAccounts.companyId, companyId), eq(bankAccounts.conta, conta)),
 		)
 		.limit(1);
 

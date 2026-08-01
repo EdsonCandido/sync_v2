@@ -31,10 +31,11 @@ export function KpiCard({
 			textAlign="left"
 			w="full"
 			p={{ base: 5, md: 6 }}
-			bg="bg.panel"
+			bg="helios.panel"
 			borderWidth="1px"
 			borderColor="border"
-			borderRadius="2xl"
+			borderRadius="heliosXl"
+			shadow="heliosSm"
 			cursor={onClick ? "pointer" : "default"}
 			transition="all 0.2s ease"
 			_hover={

@@ -285,8 +285,7 @@ export function FinancialEntryFormDialog({
 			? "Nova conta a receber"
 			: "Nova conta a pagar";
 
-	const showOriginFields =
-		isEdit || defaults?.originType !== "kanban";
+	const showOriginFields = isEdit || defaults?.originType !== "kanban";
 
 	return (
 		<Dialog.Root open={open} onOpenChange={(e) => onOpenChange(e.open)}>
@@ -379,9 +378,7 @@ export function FinancialEntryFormDialog({
 													onChange={(e) =>
 														setForm((f) => ({
 															...f,
-															originType: e.target.value as
-																| "avulsa"
-																| "manual",
+															originType: e.target.value as "avulsa" | "manual",
 														}))
 													}
 												>

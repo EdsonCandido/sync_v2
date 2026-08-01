@@ -1,8 +1,12 @@
-import { Box, Heading, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import { Box, SimpleGrid, Stack } from "@chakra-ui/react";
+
+import { PageHeader } from "@/components/ui/PageHeader";
 import type { CompanyDashboard } from "@/lib/company-dashboard-api";
+
 import { DepartmentPieChart } from "./DepartmentPieChart";
 import { InsightsPanel } from "./InsightsPanel";
 import { KpiGrid } from "./KpiGrid";
+import { WidgetGrid } from "./mocks/WidgetGrid";
 import { PendenciesList } from "./PendenciesList";
 import { QuickActions } from "./QuickActions";
 import { RecentActivityTable } from "./RecentActivityTable";
@@ -18,43 +22,13 @@ export function CompanyAdminDashboard({
 	userName,
 }: CompanyAdminDashboardProps) {
 	return (
-		<Box
-			maxW="7xl"
-			mx="auto"
-			animation="fade-in 0.45s ease-out"
-			css={{
-				"@keyframes fade-in": {
-					from: { opacity: 0, transform: "translateY(8px)" },
-					to: { opacity: 1, transform: "translateY(0)" },
-				},
-			}}
-		>
+		<Box maxW="7xl" mx="auto">
 			<Stack gap={8}>
-				<Box>
-					<Text
-						fontSize="sm"
-						fontWeight="600"
-						color="helios.fg"
-						letterSpacing="0.06em"
-						textTransform="uppercase"
-						mb={2}
-					>
-						Visão geral
-					</Text>
-					<Heading
-						as="h1"
-						size="2xl"
-						fontFamily="heading"
-						fontWeight="800"
-						letterSpacing="-0.03em"
-						lineHeight="1.15"
-					>
-						{userName ? `Olá, ${userName}.` : "Dashboard"}
-					</Heading>
-					<Text mt={2} color="fg.muted" maxW="xl">
-						Panorama da sua empresa em tempo quase real.
-					</Text>
-				</Box>
+				<PageHeader
+					eyebrow="Visão geral"
+					title={userName ? `Olá, ${userName}.` : "Dashboard"}
+					description="Panorama da sua empresa em tempo quase real."
+				/>
 
 				<KpiGrid kpis={data.kpis} />
 
@@ -67,13 +41,16 @@ export function CompanyAdminDashboard({
 					</Box>
 				</SimpleGrid>
 
-				<RecentActivityTable activities={data.recentActivities} />
-
-				<PendenciesList pendencies={data.pendencies} />
+				<SimpleGrid columns={{ base: 1, lg: 2 }} gap={5}>
+					<RecentActivityTable activities={data.recentActivities} />
+					<PendenciesList pendencies={data.pendencies} />
+				</SimpleGrid>
 
 				<InsightsPanel insights={data.insights} />
 
 				<QuickActions />
+
+				<WidgetGrid />
 			</Stack>
 		</Box>
 	);

@@ -7,8 +7,8 @@ import { KanbanHistoryRepository } from "../repositories/KanbanHistoryRepository
 import { KanbanTagRepository } from "../repositories/KanbanTagRepository";
 import { UserRepository } from "../repositories/UserRepository";
 import { AppError } from "../utils/AppError";
-import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 import { EnsureBaseKanbanColumnsService } from "./EnsureBaseKanbanColumnsService";
+import { assertCanAccessKanbanBoard } from "./KanbanBoardAccessRules";
 import { syncCardTags } from "./SyncKanbanCardTagsService";
 
 export class CreateKanbanCardService {

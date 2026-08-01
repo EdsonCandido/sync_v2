@@ -16,18 +16,18 @@ import { ApiError } from "@/lib/api";
 import { maskCpfInput, parseCpfDigits } from "@/lib/cpf";
 import {
 	ITR_FILE_KIND_LABELS,
-	type PublicItrConsultItem,
 	itrApi,
+	type PublicItrConsultItem,
 } from "@/lib/itr-api";
 
 import type { Route } from "./+types/consultar-itr";
 
 export function meta(_args: Route.MetaArgs) {
 	return [
-		{ title: "Consultar ITR — Sync" },
+		{ title: "Consultar ITR — Helios Labs" },
 		{
 			name: "description",
-			content: "Consulte o status do seu ITR pelo CPF.",
+			content: "Consulte o status do seu ITR pelo CPF no Helios Labs.",
 		},
 	];
 }

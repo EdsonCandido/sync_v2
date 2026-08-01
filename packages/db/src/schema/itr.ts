@@ -55,25 +55,28 @@ export const itrFiles = pgTable("itr_files", {
 	...softDeleteColumns,
 });
 
-export const itrProcessesRelations = relations(itrProcesses, ({ one, many }) => ({
-	company: one(companies, {
-		fields: [itrProcesses.companyId],
-		references: [companies.id],
+export const itrProcessesRelations = relations(
+	itrProcesses,
+	({ one, many }) => ({
+		company: one(companies, {
+			fields: [itrProcesses.companyId],
+			references: [companies.id],
+		}),
+		client: one(clients, {
+			fields: [itrProcesses.clientId],
+			references: [clients.id],
+		}),
+		kanbanCard: one(kanbanCards, {
+			fields: [itrProcesses.kanbanCardId],
+			references: [kanbanCards.id],
+		}),
+		financialEntry: one(financialEntries, {
+			fields: [itrProcesses.financialEntryId],
+			references: [financialEntries.id],
+		}),
+		files: many(itrFiles),
 	}),
-	client: one(clients, {
-		fields: [itrProcesses.clientId],
-		references: [clients.id],
-	}),
-	kanbanCard: one(kanbanCards, {
-		fields: [itrProcesses.kanbanCardId],
-		references: [kanbanCards.id],
-	}),
-	financialEntry: one(financialEntries, {
-		fields: [itrProcesses.financialEntryId],
-		references: [financialEntries.id],
-	}),
-	files: many(itrFiles),
-}));
+);
 
 export const itrFilesRelations = relations(itrFiles, ({ one }) => ({
 	process: one(itrProcesses, {

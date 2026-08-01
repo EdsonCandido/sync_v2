@@ -25,12 +25,10 @@ const itrFormSchema = z.object({
 		.refine((v) => parseCpfDigits(v).length === 11, "CPF inválido"),
 	name: z.string().min(1, "Obrigatório"),
 	email: z.email("E-mail inválido"),
-	phone: z
-		.string()
-		.refine((v) => {
-			const d = parsePhoneDigits(v);
-			return d.length >= 10 && d.length <= 11;
-		}, "Telefone inválido"),
+	phone: z.string().refine((v) => {
+		const d = parsePhoneDigits(v);
+		return d.length >= 10 && d.length <= 11;
+	}, "Telefone inválido"),
 	valor: z.string().min(1, "Obrigatório"),
 	dataVencimento: z.string().min(1, "Data de vencimento obrigatória"),
 	observacoes: z.string().optional(),
@@ -170,9 +168,7 @@ export function ItrFormDialog({
 			setLookupStatus("idle");
 			toaster.create({
 				title:
-					error instanceof ApiError
-						? error.message
-						: "Erro ao buscar cliente",
+					error instanceof ApiError ? error.message : "Erro ao buscar cliente",
 				type: "error",
 			});
 		}
@@ -354,9 +350,7 @@ export function ItrFormDialog({
 									<Field.Label>Declaração (opcional)</Field.Label>
 									<Input
 										type="file"
-										onChange={(e) =>
-											setDeclaracao(e.target.files?.[0] ?? null)
-										}
+										onChange={(e) => setDeclaracao(e.target.files?.[0] ?? null)}
 									/>
 									{declaracao && (
 										<Text fontSize="sm" color="fg.muted" mt={1}>

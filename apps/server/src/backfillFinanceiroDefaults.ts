@@ -3,7 +3,8 @@ import { BackfillCompaniesFinanceiroDefaultsService } from "./services/BackfillC
 async function main() {
 	console.log("Backfill: categorias + centros de custo padrão (idempotente)…");
 
-	const result = await new BackfillCompaniesFinanceiroDefaultsService().execute();
+	const result =
+		await new BackfillCompaniesFinanceiroDefaultsService().execute();
 
 	console.log(
 		`Backfill: ${result.processed}/${result.totalCompanies} empresas processadas.`,
@@ -18,7 +19,9 @@ async function main() {
 		return;
 	}
 
-	console.log("Backfill: concluído sem duplicidade (pula name/código já ativos).");
+	console.log(
+		"Backfill: concluído sem duplicidade (pula name/código já ativos).",
+	);
 }
 
 main().catch((error) => {

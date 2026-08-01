@@ -46,7 +46,8 @@ export class BackfillCompaniesFinanceiroDefaultsService {
 	}
 
 	private async resolveActorUserId() {
-		const superUser = await this.userRepository.findFirstActiveByPerfil("super");
+		const superUser =
+			await this.userRepository.findFirstActiveByPerfil("super");
 		if (!superUser) {
 			throw new AppError(
 				500,

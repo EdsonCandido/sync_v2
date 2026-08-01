@@ -2,8 +2,8 @@ import type { CreateCompanyInput } from "@sync_v2/contracts";
 import { CompanyRepository } from "../repositories/CompanyRepository";
 import { PlanRepository } from "../repositories/PlanRepository";
 import { AppError } from "../utils/AppError";
-import { SeedCompanyFinanceiroDefaultsService } from "./SeedCompanyFinanceiroDefaultsService";
 import { EnsureItrKanbanBoardService } from "./EnsureItrKanbanBoardService";
+import { SeedCompanyFinanceiroDefaultsService } from "./SeedCompanyFinanceiroDefaultsService";
 
 export class CreateCompanyService {
 	constructor(

@@ -1,4 +1,4 @@
-import { Box, Flex, Icon, Text } from "@chakra-ui/react";
+import { Flex, Icon, Text } from "@chakra-ui/react";
 import {
 	LuCircleAlert,
 	LuInfo,

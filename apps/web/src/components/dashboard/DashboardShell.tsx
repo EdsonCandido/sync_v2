@@ -2,6 +2,8 @@ import { Box, Drawer, Flex, Portal } from "@chakra-ui/react";
 import { useState } from "react";
 import { Outlet } from "react-router";
 
+import { SolarGlow } from "@/components/ui/SolarGlow";
+
 import { DashboardNavbar } from "./DashboardNavbar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { ModuleAccessProvider } from "./ModuleAccessProvider";
@@ -11,7 +13,36 @@ export function DashboardShell() {
 
 	return (
 		<ModuleAccessProvider>
-			<Flex h="100svh" overflow="hidden" bg="bg" color="fg" position="relative">
+			<a
+				href="#dashboard-main"
+				style={{
+					position: "absolute",
+					left: "-9999px",
+					top: "8px",
+					zIndex: 100,
+					background: "var(--chakra-colors-helios-solid)",
+					color: "var(--chakra-colors-helios-contrast)",
+					padding: "8px 12px",
+					borderRadius: "8px",
+					fontSize: "14px",
+					fontWeight: 600,
+				}}
+				onFocus={(e) => {
+					e.currentTarget.style.left = "8px";
+				}}
+				onBlur={(e) => {
+					e.currentTarget.style.left = "-9999px";
+				}}
+			>
+				Ir para o conteúdo
+			</a>
+			<Flex
+				h="100svh"
+				overflow="hidden"
+				bg="helios.canvas"
+				color="fg"
+				position="relative"
+			>
 				<Box
 					position="absolute"
 					inset={0}
@@ -19,10 +50,15 @@ export function DashboardShell() {
 					zIndex={0}
 					bgImage={{
 						_light:
-							"radial-gradient(circle at top left, rgba(234,179,8,0.14), transparent 45%), radial-gradient(circle at bottom right, rgba(250,204,21,0.08), transparent 50%)",
+							"radial-gradient(circle at top left, rgba(253,184,19,0.12), transparent 45%), radial-gradient(circle at bottom right, rgba(255,138,0,0.06), transparent 50%)",
 						_dark:
-							"radial-gradient(circle at top left, rgba(250,204,21,0.12), transparent 45%), radial-gradient(circle at bottom right, rgba(250,204,21,0.06), transparent 50%)",
+							"radial-gradient(circle at top left, rgba(253,184,19,0.1), transparent 45%), radial-gradient(circle at bottom right, rgba(253,184,19,0.05), transparent 50%)",
 					}}
+				/>
+				<SolarGlow
+					intensity="soft"
+					opacity={0.35}
+					display={{ base: "none", lg: "block" }}
 				/>
 
 				<Box
@@ -33,7 +69,7 @@ export function DashboardShell() {
 					borderRightWidth="1px"
 					borderColor="border"
 					bg="dash.sidebar"
-					backdropFilter="blur(12px)"
+					backdropFilter="blur(14px)"
 					position="relative"
 					zIndex={1}
 				>
@@ -48,7 +84,14 @@ export function DashboardShell() {
 					zIndex={1}
 				>
 					<DashboardNavbar onOpenSidebar={() => setDrawerOpen(true)} />
-					<Box as="main" flex="1" overflowY="auto" p={{ base: 4, md: 8 }}>
+					<Box
+						as="main"
+						id="dashboard-main"
+						flex="1"
+						overflowY="auto"
+						p={{ base: 4, md: 8 }}
+						tabIndex={-1}
+					>
 						<Outlet />
 					</Box>
 				</Flex>

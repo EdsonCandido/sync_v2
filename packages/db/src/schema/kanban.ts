@@ -178,18 +178,21 @@ export const kanbanCardAttachments = pgTable("kanban_card_attachments", {
 	...softDeleteColumns,
 });
 
-export const kanbanBoardsRelations = relations(kanbanBoards, ({ one, many }) => ({
-	company: one(companies, {
-		fields: [kanbanBoards.companyId],
-		references: [companies.id],
+export const kanbanBoardsRelations = relations(
+	kanbanBoards,
+	({ one, many }) => ({
+		company: one(companies, {
+			fields: [kanbanBoards.companyId],
+			references: [companies.id],
+		}),
+		creator: one(user, {
+			fields: [kanbanBoards.createdBy],
+			references: [user.id],
+		}),
+		columns: many(kanbanColumns),
+		members: many(kanbanBoardMembers),
 	}),
-	creator: one(user, {
-		fields: [kanbanBoards.createdBy],
-		references: [user.id],
-	}),
-	columns: many(kanbanColumns),
-	members: many(kanbanBoardMembers),
-}));
+);
 
 export const kanbanBoardMembersRelations = relations(
 	kanbanBoardMembers,

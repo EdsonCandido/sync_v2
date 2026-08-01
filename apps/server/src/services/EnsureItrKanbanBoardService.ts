@@ -1,7 +1,4 @@
-import {
-	ITR_KANBAN_COLUMNS,
-	ITR_KANBAN_COLUMN_SLUGS,
-} from "@sync_v2/types";
+import { ITR_KANBAN_COLUMN_SLUGS, ITR_KANBAN_COLUMNS } from "@sync_v2/types";
 import { KanbanBoardRepository } from "../repositories/KanbanBoardRepository";
 import { KanbanColumnRepository } from "../repositories/KanbanColumnRepository";
 

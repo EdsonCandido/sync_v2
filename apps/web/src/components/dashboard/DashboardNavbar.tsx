@@ -1,5 +1,6 @@
 import {
 	Avatar,
+	Badge,
 	Button,
 	CloseButton,
 	DataList,
@@ -8,15 +9,19 @@ import {
 	HStack,
 	IconButton,
 	Input,
+	InputGroup,
+	Kbd,
 	Menu,
+	Popover,
 	Portal,
 	Skeleton,
 	Stack,
 	Text,
+	VStack,
 } from "@chakra-ui/react";
 import { useState } from "react";
-import { LuMenu } from "react-icons/lu";
-import { useNavigate } from "react-router";
+import { LuBell, LuMenu, LuSearch } from "react-icons/lu";
+import { useLocation, useNavigate } from "react-router";
 
 import { ColorModeButton } from "@/components/ui/color-mode";
 import { toaster } from "@/components/ui/toaster";
@@ -28,8 +33,40 @@ type DashboardNavbarProps = {
 	onOpenSidebar: () => void;
 };
 
+const MOCK_NOTIFICATIONS = [
+	{
+		id: "1",
+		title: "Pendência financeira",
+		body: "3 lançamentos vencem esta semana.",
+		time: "há 12 min",
+	},
+	{
+		id: "2",
+		title: "Novo card no Kanban",
+		body: "Equipe Comercial moveu “Proposta Atlas”.",
+		time: "há 1 h",
+	},
+	{
+		id: "3",
+		title: "Meta de retenção",
+		body: "Você está a 2% da meta mensal.",
+		time: "ontem",
+	},
+] as const;
+
+function breadcrumbFromPath(pathname: string) {
+	const parts = pathname.split("/").filter(Boolean);
+	if (parts.length <= 1) return "Painel";
+	const last = parts[parts.length - 1] ?? "Painel";
+	return last
+		.split("-")
+		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+		.join(" ");
+}
+
 export function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps) {
 	const navigate = useNavigate();
+	const { pathname } = useLocation();
 	const { data: session, isPending } = authClient.useSession();
 	const [infoOpen, setInfoOpen] = useState(false);
 	const [passwordOpen, setPasswordOpen] = useState(false);
@@ -37,9 +74,11 @@ export function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps) {
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [savingPassword, setSavingPassword] = useState(false);
+	const [search, setSearch] = useState("");
 
 	const userName = session?.user.name ?? "";
 	const userEmail = session?.user.email ?? "";
+	const crumb = breadcrumbFromPath(pathname);
 
 	async function handleChangePassword() {
 		if (newPassword.length < 6) {
@@ -85,10 +124,11 @@ export function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps) {
 				borderBottomWidth="1px"
 				borderColor="border"
 				bg="dash.navbar"
-				backdropFilter="blur(12px)"
+				backdropFilter="blur(14px)"
 				minH="14"
+				gap={3}
 			>
-				<HStack gap={2}>
+				<HStack gap={3} flex="1" minW={0}>
 					<IconButton
 						aria-label="Abrir menu"
 						variant="ghost"
@@ -100,17 +140,144 @@ export function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps) {
 					>
 						<LuMenu />
 					</IconButton>
-					<Text
-						display={{ base: "none", md: "block" }}
-						fontSize="sm"
-						color="fg.muted"
-						fontWeight="500"
+					<Stack gap={0} display={{ base: "none", md: "flex" }} minW={0}>
+						<Text fontSize="xs" color="fg.muted" fontWeight="500">
+							Helios Labs
+						</Text>
+						<Text fontSize="sm" fontWeight="600" truncate>
+							{crumb}
+						</Text>
+					</Stack>
+
+					<InputGroup
+						maxW="sm"
+						flex="1"
+						display={{ base: "none", lg: "flex" }}
+						startElement={<LuSearch />}
+						endElement={
+							<HStack gap={1} me={1}>
+								<Kbd size="sm">⌘</Kbd>
+								<Kbd size="sm">K</Kbd>
+							</HStack>
+						}
 					>
-						Painel
-					</Text>
+						<Input
+							placeholder="Busca global (demo)"
+							value={search}
+							onChange={(e) => setSearch(e.target.value)}
+							aria-label="Busca global"
+							bg="bg.subtle"
+							borderColor="border"
+							_focusVisible={{
+								borderColor: "helios.solid",
+								boxShadow: "0 0 0 1px var(--chakra-colors-helios-solid)",
+							}}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" && search.trim()) {
+									toaster.create({
+										title: "Busca demo",
+										description: `“${search.trim()}” — API em breve.`,
+										type: "info",
+									});
+								}
+							}}
+						/>
+					</InputGroup>
 				</HStack>
 
-				<HStack gap={2}>
+				<HStack gap={1}>
+					<IconButton
+						aria-label="Buscar"
+						variant="ghost"
+						size="sm"
+						display={{ base: "inline-flex", lg: "none" }}
+						onClick={() =>
+							toaster.create({
+								title: "Busca global",
+								description: "Disponível no desktop nesta demo.",
+								type: "info",
+							})
+						}
+					>
+						<LuSearch />
+					</IconButton>
+
+					<Popover.Root positioning={{ placement: "bottom-end" }}>
+						<Popover.Trigger asChild>
+							<IconButton
+								aria-label="Notificações"
+								variant="ghost"
+								size="sm"
+								position="relative"
+							>
+								<LuBell />
+								<Badge
+									position="absolute"
+									top="0.5"
+									right="0.5"
+									rounded="full"
+									bg="helios.solid"
+									color="helios.contrast"
+									fontSize="2xs"
+									minW="4"
+									h="4"
+									px={0}
+									display="flex"
+									alignItems="center"
+									justifyContent="center"
+								>
+									3
+								</Badge>
+							</IconButton>
+						</Popover.Trigger>
+						<Portal>
+							<Popover.Positioner>
+								<Popover.Content
+									w="80"
+									bg="bg.panel"
+									borderColor="border"
+									shadow="heliosMd"
+								>
+									<Popover.Header fontWeight="700" fontFamily="heading">
+										Notificações
+										<Badge
+											ms={2}
+											bg="helios.subtle"
+											color="helios.fg"
+											fontSize="2xs"
+											fontWeight="700"
+										>
+											demo
+										</Badge>
+									</Popover.Header>
+									<Popover.Body>
+										<VStack align="stretch" gap={3}>
+											{MOCK_NOTIFICATIONS.map((n) => (
+												<Stack
+													key={n.id}
+													gap={0.5}
+													p={2}
+													rounded="md"
+													_hover={{ bg: "helios.subtle" }}
+												>
+													<Text fontSize="sm" fontWeight="600">
+														{n.title}
+													</Text>
+													<Text fontSize="xs" color="fg.muted">
+														{n.body}
+													</Text>
+													<Text fontSize="2xs" color="fg.muted">
+														{n.time}
+													</Text>
+												</Stack>
+											))}
+										</VStack>
+									</Popover.Body>
+								</Popover.Content>
+							</Popover.Positioner>
+						</Portal>
+					</Popover.Root>
+
 					<ColorModeButton />
 					{isPending ? (
 						<Skeleton h={9} w={28} rounded="md" />

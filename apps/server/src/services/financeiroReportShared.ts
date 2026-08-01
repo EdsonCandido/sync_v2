@@ -68,8 +68,7 @@ export function eachDayIso(from: Date, to: Date): string[] {
 
 export function isSameCalendarMonth(from: Date, to: Date): boolean {
 	return (
-		from.getFullYear() === to.getFullYear() &&
-		from.getMonth() === to.getMonth()
+		from.getFullYear() === to.getFullYear() && from.getMonth() === to.getMonth()
 	);
 }
 

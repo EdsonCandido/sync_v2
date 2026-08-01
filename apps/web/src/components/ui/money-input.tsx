@@ -2,7 +2,10 @@ import { Input, type InputProps } from "@chakra-ui/react";
 
 import { maskMoneyInput } from "@/lib/money";
 
-export type MoneyInputProps = Omit<InputProps, "type" | "value" | "onChange"> & {
+export type MoneyInputProps = Omit<
+	InputProps,
+	"type" | "value" | "onChange"
+> & {
 	value: string;
 	onChange: (masked: string) => void;
 	allowNegative?: boolean;

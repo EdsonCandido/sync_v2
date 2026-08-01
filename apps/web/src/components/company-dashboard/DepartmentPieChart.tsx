@@ -22,10 +22,11 @@ export function DepartmentPieChart({ data }: DepartmentPieChartProps) {
 	return (
 		<Box
 			p={{ base: 5, md: 6 }}
-			bg="bg.panel"
+			bg="helios.panel"
 			borderWidth="1px"
 			borderColor="border"
-			borderRadius="2xl"
+			borderRadius="heliosXl"
+			shadow="heliosSm"
 			h="full"
 			minH="320px"
 		>

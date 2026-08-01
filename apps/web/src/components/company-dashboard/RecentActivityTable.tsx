@@ -9,10 +9,11 @@ export function RecentActivityTable({ activities }: RecentActivityTableProps) {
 	return (
 		<Box
 			p={{ base: 5, md: 6 }}
-			bg="bg.panel"
+			bg="helios.panel"
 			borderWidth="1px"
 			borderColor="border"
-			borderRadius="2xl"
+			borderRadius="heliosXl"
+			shadow="heliosSm"
 		>
 			<Heading as="h2" size="md" fontFamily="heading" fontWeight="700" mb={1}>
 				Últimas atividades

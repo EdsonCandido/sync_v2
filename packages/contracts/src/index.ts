@@ -712,12 +712,7 @@ const bankAccountTipoSchema = z.enum([
 	"outro",
 ]);
 const financialEntryKindSchema = z.enum(["receber", "pagar"]);
-const financialOriginTypeSchema = z.enum([
-	"avulsa",
-	"kanban",
-	"manual",
-	"itr",
-]);
+const financialOriginTypeSchema = z.enum(["avulsa", "kanban", "manual", "itr"]);
 const financialEntryStatusSchema = z.enum([
 	"em_aberto",
 	"parcial",

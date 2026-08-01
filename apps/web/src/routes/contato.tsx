@@ -18,10 +18,10 @@ import type { Route } from "./+types/contato";
 
 export function meta(_args: Route.MetaArgs) {
 	return [
-		{ title: "Contato — Sync" },
+		{ title: "Contato — Helios Labs" },
 		{
 			name: "description",
-			content: "Envie uma mensagem. Em breve entraremos em contato.",
+			content: "Fale com a Helios Labs. Em breve entraremos em contato.",
 		},
 	];
 }
@@ -139,7 +139,7 @@ export default function Contato() {
 							{({ canSubmit, isSubmitting }) => (
 								<Button
 									type="submit"
-									colorPalette="teal"
+									colorPalette="helios"
 									w="full"
 									disabled={!canSubmit || isSubmitting}
 								>
@@ -153,7 +153,7 @@ export default function Contato() {
 				<Button
 					asChild
 					variant="plain"
-					colorPalette="teal"
+					colorPalette="helios"
 					alignSelf="flex-start"
 				>
 					<Link to="/">Voltar ao início</Link>
