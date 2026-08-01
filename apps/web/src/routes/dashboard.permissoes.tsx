@@ -26,6 +26,7 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
 	financeiro: "Financeiro",
 	itr: "ITR",
 	kanban: "Kanban",
+	agendamentos: "Agendamentos",
 	usuarios: "Usuários",
 };
 
@@ -34,9 +35,9 @@ const MODULE_KEYS: ModuleKey[] = [
 	"financeiro",
 	"itr",
 	"kanban",
+	"agendamentos",
 	"usuarios",
 ];
-
 export default function DashboardPermissoes() {
 	const navigate = useNavigate();
 	const { data: session, isPending: sessionPending } = authClient.useSession();

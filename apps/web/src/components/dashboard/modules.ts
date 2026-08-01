@@ -2,6 +2,7 @@ import type { IconType } from "react-icons";
 import {
 	LuBadgeDollarSign,
 	LuBuilding2,
+	LuCalendar,
 	LuClipboardList,
 	LuHouse,
 	LuKanban,
@@ -57,6 +58,13 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
 		path: "/dashboard/kanban",
 		icon: LuKanban,
 		moduleKey: "kanban",
+	},
+	{
+		id: "agendamentos",
+		label: "Agendamentos",
+		path: "/dashboard/agendamentos",
+		icon: LuCalendar,
+		moduleKey: "agendamentos",
 	},
 	{
 		id: "financeiro",

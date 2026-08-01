@@ -9,6 +9,7 @@ export const APP_MODULES = [
 	"financeiro",
 	"itr",
 	"kanban",
+	"agendamentos",
 	"usuarios",
 ] as const;
 

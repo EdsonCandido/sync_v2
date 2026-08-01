@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Outlet } from "react-router";
 
 import { SolarGlow } from "@/components/ui/SolarGlow";
+import { useAppointmentReminderAlerts } from "@/hooks/useAppointmentReminderAlerts";
+import { authClient } from "@/lib/auth-client";
 
 import { DashboardNavbar } from "./DashboardNavbar";
 import { DashboardSidebar } from "./DashboardSidebar";
@@ -10,6 +12,8 @@ import { ModuleAccessProvider } from "./ModuleAccessProvider";
 
 export function DashboardShell() {
 	const [drawerOpen, setDrawerOpen] = useState(false);
+	const { data: session } = authClient.useSession();
+	useAppointmentReminderAlerts(session?.user?.id);
 
 	return (
 		<ModuleAccessProvider>

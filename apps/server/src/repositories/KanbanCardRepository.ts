@@ -7,7 +7,7 @@ import {
 	kanbanCards,
 	kanbanColumns,
 } from "@sync_v2/db/schema/kanban";
-import { and, asc, eq, inArray, max, notInArray } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, lte, max, notInArray } from "drizzle-orm";
 import { KanbanHistoryRepository } from "./KanbanHistoryRepository";
 import { KanbanTagRepository } from "./KanbanTagRepository";
 
@@ -439,5 +439,26 @@ export class KanbanCardRepository {
 			)
 			.limit(1);
 		return Boolean(row);
+	}
+
+	async listDueBetween(companyId: string, from: Date, to: Date, limit = 50) {
+		return db
+			.select({
+				id: kanbanCards.id,
+				title: kanbanCards.title,
+				dueAt: kanbanCards.dueAt,
+			})
+			.from(kanbanCards)
+			.where(
+				and(
+					eq(kanbanCards.companyId, companyId),
+					eq(kanbanCards.ativo, true),
+					isNotNull(kanbanCards.dueAt),
+					gte(kanbanCards.dueAt, from),
+					lte(kanbanCards.dueAt, to),
+				),
+			)
+			.orderBy(asc(kanbanCards.dueAt))
+			.limit(limit);
 	}
 }
