@@ -191,7 +191,9 @@ export type GeocodeResponse = z.infer<typeof geocodeResponseSchema>;
 export const APP_MODULE_KEYS = [
 	"clientes",
 	"financeiro",
+	"itr",
 	"kanban",
+	"agendamentos",
 	"usuarios",
 ] as const;
 
@@ -1461,4 +1463,246 @@ export const publicItrConsultResponseSchema = z.object({
 
 export type PublicItrConsultResponse = z.infer<
 	typeof publicItrConsultResponseSchema
+>;
+
+// --- Agendamentos ---
+
+export const appointmentSlotKindSchema = z.enum([
+	"timed",
+	"all_day",
+	"morning",
+	"afternoon",
+]);
+
+export type AppointmentSlotKind = z.infer<typeof appointmentSlotKindSchema>;
+
+export const createAppointmentSchema = z
+	.object({
+		title: z.string().min(1),
+		notes: z.string().optional().nullable(),
+		slotKind: appointmentSlotKindSchema,
+		date: z.coerce.date(),
+		startsAt: z.coerce.date().optional().nullable(),
+		endsAt: z.coerce.date().optional().nullable(),
+		remindEnabled: z.boolean().optional().default(false),
+	})
+	.superRefine((data, ctx) => {
+		if (data.slotKind === "timed" && !data.startsAt) {
+			ctx.addIssue({
+				code: "custom",
+				message: "Horário de início obrigatório para agendamento com horário.",
+				path: ["startsAt"],
+			});
+		}
+	});
+
+export type CreateAppointmentInput = z.infer<typeof createAppointmentSchema>;
+
+export const updateAppointmentSchema = z
+	.object({
+		title: z.string().min(1).optional(),
+		notes: z.string().optional().nullable(),
+		slotKind: appointmentSlotKindSchema.optional(),
+		date: z.coerce.date().optional(),
+		startsAt: z.coerce.date().optional().nullable(),
+		endsAt: z.coerce.date().optional().nullable(),
+		remindEnabled: z.boolean().optional(),
+	})
+	.superRefine((data, ctx) => {
+		if (data.slotKind === "timed" && data.startsAt === null) {
+			ctx.addIssue({
+				code: "custom",
+				message: "Horário de início obrigatório para agendamento com horário.",
+				path: ["startsAt"],
+			});
+		}
+	});
+
+export type UpdateAppointmentInput = z.infer<typeof updateAppointmentSchema>;
+
+export const listAppointmentsQuerySchema = z.object({
+	from: z.coerce.date().optional(),
+	to: z.coerce.date().optional(),
+});
+
+export type ListAppointmentsQuery = z.infer<typeof listAppointmentsQuerySchema>;
+
+export const appointmentResponseSchema = z.object({
+	id: z.string().uuid(),
+	companyId: z.string().uuid(),
+	userId: z.string().uuid(),
+	title: z.string(),
+	notes: z.string().nullable(),
+	slotKind: appointmentSlotKindSchema,
+	date: z.coerce.date(),
+	startsAt: z.coerce.date().nullable(),
+	endsAt: z.coerce.date().nullable(),
+	remindEnabled: z.boolean(),
+	ativo: z.boolean(),
+	createdAt: z.coerce.date(),
+	updatedAt: z.coerce.date(),
+});
+
+export type AppointmentResponse = z.infer<typeof appointmentResponseSchema>;
+
+export const listAppointmentsResponseSchema = z.object({
+	items: z.array(appointmentResponseSchema),
+});
+
+export type ListAppointmentsResponse = z.infer<
+	typeof listAppointmentsResponseSchema
+>;
+
+// --- Notificações ---
+
+export const notificationKindSchema = z.enum(["appointment_reminder"]);
+
+export type NotificationKind = z.infer<typeof notificationKindSchema>;
+
+export const notificationResponseSchema = z.object({
+	id: z.string().uuid(),
+	userId: z.string().uuid(),
+	companyId: z.string().uuid().nullable(),
+	title: z.string(),
+	body: z.string(),
+	kind: notificationKindSchema,
+	appointmentId: z.string().uuid().nullable(),
+	readAt: z.coerce.date().nullable(),
+	createdAt: z.coerce.date(),
+});
+
+export type NotificationResponse = z.infer<typeof notificationResponseSchema>;
+
+export const listNotificationsResponseSchema = z.object({
+	items: z.array(notificationResponseSchema),
+	unreadCount: z.number().int().nonnegative(),
+});
+
+export type ListNotificationsResponse = z.infer<
+	typeof listNotificationsResponseSchema
+>;
+
+// --- Dashboard widgets ---
+
+export const dashboardWidgetIdSchema = z.enum([
+	"calendar",
+	"timeline",
+	"favorites",
+	"goals",
+	"finance",
+	"alerts",
+]);
+
+export type DashboardWidgetId = z.infer<typeof dashboardWidgetIdSchema>;
+
+export const updateDashboardWidgetLayoutSchema = z.object({
+	widgetOrder: z.array(dashboardWidgetIdSchema).min(1),
+});
+
+export type UpdateDashboardWidgetLayoutInput = z.infer<
+	typeof updateDashboardWidgetLayoutSchema
+>;
+
+export const createDashboardFavoriteSchema = z.object({
+	label: z.string().min(1),
+	path: z.string().min(1),
+	sortOrder: z.number().int().optional(),
+});
+
+export type CreateDashboardFavoriteInput = z.infer<
+	typeof createDashboardFavoriteSchema
+>;
+
+export const updateDashboardFavoriteSchema = z.object({
+	label: z.string().min(1).optional(),
+	path: z.string().min(1).optional(),
+	sortOrder: z.number().int().optional(),
+});
+
+export type UpdateDashboardFavoriteInput = z.infer<
+	typeof updateDashboardFavoriteSchema
+>;
+
+export const createDashboardGoalSchema = z.object({
+	label: z.string().min(1),
+	progress: z.number().int().min(0).max(100).default(0),
+	targetLabel: z.string().min(1),
+});
+
+export type CreateDashboardGoalInput = z.infer<
+	typeof createDashboardGoalSchema
+>;
+
+export const updateDashboardGoalSchema = z.object({
+	label: z.string().min(1).optional(),
+	progress: z.number().int().min(0).max(100).optional(),
+	targetLabel: z.string().min(1).optional(),
+});
+
+export type UpdateDashboardGoalInput = z.infer<
+	typeof updateDashboardGoalSchema
+>;
+
+export const dashboardWidgetsResponseSchema = z.object({
+	layout: z.object({
+		widgetOrder: z.array(dashboardWidgetIdSchema),
+	}),
+	calendar: z.array(
+		z.object({
+			id: z.string(),
+			title: z.string(),
+			startsAt: z.coerce.date(),
+			endsAt: z.coerce.date().nullable(),
+			source: z.enum([
+				"appointment",
+				"kanban",
+				"financeiro",
+				"contrato",
+				"pagamento",
+			]),
+			slotKind: appointmentSlotKindSchema.optional(),
+		}),
+	),
+	timeline: z.array(
+		z.object({
+			id: z.string().uuid(),
+			title: z.string(),
+			meta: z.string(),
+			tone: z.enum(["info", "success", "warning", "error"]),
+			occurredAt: z.coerce.date(),
+		}),
+	),
+	favorites: z.array(
+		z.object({
+			id: z.string(),
+			label: z.string(),
+			path: z.string(),
+			sortOrder: z.number().int(),
+		}),
+	),
+	goals: z.array(
+		z.object({
+			id: z.string().uuid(),
+			label: z.string(),
+			progress: z.number().int(),
+			targetLabel: z.string(),
+		}),
+	),
+	finance: z.object({
+		receber: z.number(),
+		pagar: z.number(),
+		saldo: z.number(),
+		trendPercent: z.number().nullable(),
+	}),
+	alerts: z.array(
+		z.object({
+			id: z.string(),
+			level: z.enum(["warning", "info", "error"]),
+			title: z.string(),
+		}),
+	),
+});
+
+export type DashboardWidgetsResponse = z.infer<
+	typeof dashboardWidgetsResponseSchema
 >;

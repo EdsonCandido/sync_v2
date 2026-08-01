@@ -5,6 +5,7 @@ export type ModuleKey =
 	| "financeiro"
 	| "itr"
 	| "kanban"
+	| "agendamentos"
 	| "usuarios";
 
 export type ModulePermissionItem = {

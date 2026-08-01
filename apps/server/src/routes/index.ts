@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { agendamentosRoutes } from "./agendamentos.routes";
 import { cepRoutes } from "./cep.routes";
 import { clientRoutes } from "./client.routes";
 import { companyRoutes } from "./company.routes";
@@ -8,6 +9,7 @@ import { geocodeRoutes } from "./geocode.routes";
 import { itrRoutes } from "./itr.routes";
 import { kanbanRoutes } from "./kanban.routes";
 import { modulePermissionRoutes } from "./module-permission.routes";
+import { notificationsRoutes } from "./notifications.routes";
 import { planRoutes } from "./plan.routes";
 import { publicItrRoutes } from "./public-itr.routes";
 import { userRoutes } from "./user.routes";
@@ -24,6 +26,8 @@ export function registerRoutes(app: Express) {
 	app.use("/api/itr", itrRoutes);
 	app.use("/api/public/itr", publicItrRoutes);
 	app.use("/api/kanban", kanbanRoutes);
+	app.use("/api/agendamentos", agendamentosRoutes);
+	app.use("/api/notifications", notificationsRoutes);
 	app.use("/api/module-permissions", modulePermissionRoutes);
 	app.use("/api/plans", planRoutes);
 	app.use("/api/users", userRoutes);

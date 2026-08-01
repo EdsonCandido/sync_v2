@@ -5,11 +5,6 @@ import { CompanyAdminDashboard } from "@/components/company-dashboard/CompanyAdm
 import { DashboardEmptyState } from "@/components/company-dashboard/DashboardEmptyState";
 import { DashboardErrorState } from "@/components/company-dashboard/DashboardErrorState";
 import { DashboardSkeleton } from "@/components/company-dashboard/DashboardSkeleton";
-import {
-	MockAlertsWidget,
-	MockFavoritesWidget,
-	MockGoalsWidget,
-} from "@/components/company-dashboard/mocks/MockWidgets";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
@@ -21,23 +16,15 @@ import {
 function WelcomeHome({ name }: { name: string }) {
 	return (
 		<Box maxW="7xl" mx="auto">
-			<Stack gap={8}>
+			<Stack gap={4}>
 				<PageHeader
 					eyebrow="Bem-vindo"
 					title={name ? `Olá, ${name}.` : "Olá."}
 					description="Selecione um módulo no menu lateral para começar."
 				/>
-				<Box
-					display="grid"
-					gridTemplateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }}
-					gap={4}
-				>
-					<MockFavoritesWidget />
-					<MockGoalsWidget />
-					<MockAlertsWidget />
-				</Box>
 				<Text fontSize="sm" color="fg.muted">
-					Widgets acimaativos — preview da experiência Helios Labs.
+					Use Agendamentos para reservar horários e ativar lembretes na
+					notificação.
 				</Text>
 			</Stack>
 		</Box>

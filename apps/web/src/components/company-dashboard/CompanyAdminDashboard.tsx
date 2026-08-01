@@ -6,7 +6,7 @@ import type { CompanyDashboard } from "@/lib/company-dashboard-api";
 import { DepartmentPieChart } from "./DepartmentPieChart";
 import { InsightsPanel } from "./InsightsPanel";
 import { KpiGrid } from "./KpiGrid";
-import { WidgetGrid } from "./mocks/WidgetGrid";
+import { WidgetGrid } from "./widgets/WidgetGrid";
 import { PendenciesList } from "./PendenciesList";
 import { QuickActions } from "./QuickActions";
 import { RecentActivityTable } from "./RecentActivityTable";

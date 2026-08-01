@@ -1010,6 +1010,34 @@ export class FinancialEntryRepository {
 		return Number(row?.total ?? 0);
 	}
 
+	async listOpenDueBetween(
+		companyId: string,
+		from: Date,
+		to: Date,
+		limit = 50,
+	) {
+		return db
+			.select({
+				id: financialEntries.id,
+				kind: financialEntries.kind,
+				originLabel: financialEntries.originLabel,
+				dataVencimento: financialEntries.dataVencimento,
+				valorAberto: financialEntries.valorAberto,
+			})
+			.from(financialEntries)
+			.where(
+				and(
+					eq(financialEntries.companyId, companyId),
+					eq(financialEntries.ativo, true),
+					sql`${financialEntries.status} IN ('em_aberto', 'parcial')`,
+					gte(financialEntries.dataVencimento, startOfDay(from)),
+					lte(financialEntries.dataVencimento, endOfDay(to)),
+				),
+			)
+			.orderBy(financialEntries.dataVencimento)
+			.limit(limit);
+	}
+
 	async sumOpenOverdueInRange(
 		companyId: string,
 		kind: string,

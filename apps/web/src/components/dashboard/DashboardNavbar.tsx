@@ -19,7 +19,7 @@ import {
 	Text,
 	VStack,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LuBell, LuMenu, LuSearch } from "react-icons/lu";
 import { useLocation, useNavigate } from "react-router";
 
@@ -27,32 +27,19 @@ import { ColorModeButton } from "@/components/ui/color-mode";
 import { toaster } from "@/components/ui/toaster";
 import { ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
+import {
+	type AppNotification,
+	notificationsApi,
+} from "@/lib/notifications-api";
+import {
+	ensureNotificationPermission,
+	showSystemReminder,
+} from "@/lib/reminder-alerts";
 import { usersApi } from "@/lib/users-api";
 
 type DashboardNavbarProps = {
 	onOpenSidebar: () => void;
 };
-
-const MOCK_NOTIFICATIONS = [
-	{
-		id: "1",
-		title: "Pendência financeira",
-		body: "3 lançamentos vencem esta semana.",
-		time: "há 12 min",
-	},
-	{
-		id: "2",
-		title: "Novo card no Kanban",
-		body: "Equipe Comercial moveu “Proposta Atlas”.",
-		time: "há 1 h",
-	},
-	{
-		id: "3",
-		title: "Meta de retenção",
-		body: "Você está a 2% da meta mensal.",
-		time: "ontem",
-	},
-] as const;
 
 function breadcrumbFromPath(pathname: string) {
 	const parts = pathname.split("/").filter(Boolean);
@@ -62,6 +49,19 @@ function breadcrumbFromPath(pathname: string) {
 		.split("-")
 		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 		.join(" ");
+}
+
+function formatRelativeTime(dateIso: string) {
+	const date = new Date(dateIso);
+	const diffMs = Date.now() - date.getTime();
+	const mins = Math.floor(diffMs / 60000);
+	if (mins < 1) return "agora";
+	if (mins < 60) return `há ${mins} min`;
+	const hours = Math.floor(mins / 60);
+	if (hours < 24) return `há ${hours} h`;
+	const days = Math.floor(hours / 24);
+	if (days === 1) return "ontem";
+	return `há ${days} d`;
 }
 
 export function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps) {
@@ -75,10 +75,59 @@ export function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps) {
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [savingPassword, setSavingPassword] = useState(false);
 	const [search, setSearch] = useState("");
+	const [notifications, setNotifications] = useState<AppNotification[]>([]);
+	const [unreadCount, setUnreadCount] = useState(0);
+	const seenIdsRef = useRef<Set<string>>(new Set());
+	const bootstrappedRef = useRef(false);
 
 	const userName = session?.user.name ?? "";
 	const userEmail = session?.user.email ?? "";
 	const crumb = breadcrumbFromPath(pathname);
+
+	const loadNotifications = useCallback(async () => {
+		if (!session?.user) return;
+		try {
+			const result = await notificationsApi.list();
+			setNotifications(result.items);
+			setUnreadCount(result.unreadCount);
+
+			if (!bootstrappedRef.current) {
+				for (const n of result.items) seenIdsRef.current.add(n.id);
+				bootstrappedRef.current = true;
+				ensureNotificationPermission();
+				return;
+			}
+
+			for (const n of result.items) {
+				if (seenIdsRef.current.has(n.id)) continue;
+				seenIdsRef.current.add(n.id);
+				if (n.kind === "appointment_reminder" && !n.readAt) {
+					showSystemReminder({
+						title: n.title,
+						body: n.body,
+						tag: n.id,
+						appointmentId: n.appointmentId,
+						withSound: true,
+					});
+				}
+			}
+		} catch {
+			/* silent — navbar não deve quebrar */
+		}
+	}, [session?.user]);
+
+	useEffect(() => {
+		void loadNotifications();
+		const id = window.setInterval(() => void loadNotifications(), 20_000);
+		const onFocus = () => void loadNotifications();
+		window.addEventListener("focus", onFocus);
+		document.addEventListener("visibilitychange", onFocus);
+		return () => {
+			window.clearInterval(id);
+			window.removeEventListener("focus", onFocus);
+			document.removeEventListener("visibilitychange", onFocus);
+		};
+	}, [loadNotifications]);
 
 	async function handleChangePassword() {
 		if (newPassword.length < 6) {
@@ -211,23 +260,25 @@ export function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps) {
 								position="relative"
 							>
 								<LuBell />
-								<Badge
-									position="absolute"
-									top="0.5"
-									right="0.5"
-									rounded="full"
-									bg="helios.solid"
-									color="helios.contrast"
-									fontSize="2xs"
-									minW="4"
-									h="4"
-									px={0}
-									display="flex"
-									alignItems="center"
-									justifyContent="center"
-								>
-									3
-								</Badge>
+								{unreadCount > 0 ? (
+									<Badge
+										position="absolute"
+										top="0.5"
+										right="0.5"
+										rounded="full"
+										bg="helios.solid"
+										color="helios.contrast"
+										fontSize="2xs"
+										minW="4"
+										h="4"
+										px={0}
+										display="flex"
+										alignItems="center"
+										justifyContent="center"
+									>
+										{unreadCount > 9 ? "9+" : unreadCount}
+									</Badge>
+								) : null}
 							</IconButton>
 						</Popover.Trigger>
 						<Portal>
@@ -238,39 +289,68 @@ export function DashboardNavbar({ onOpenSidebar }: DashboardNavbarProps) {
 									borderColor="border"
 									shadow="heliosMd"
 								>
-									<Popover.Header fontWeight="700" fontFamily="heading">
-										Notificações
-										<Badge
-											ms={2}
-											bg="helios.subtle"
-											color="helios.fg"
-											fontSize="2xs"
-											fontWeight="700"
-										>
-											demo
-										</Badge>
+									<Popover.Header
+										fontWeight="700"
+										fontFamily="heading"
+										display="flex"
+										alignItems="center"
+										justifyContent="space-between"
+										gap={2}
+									>
+										<span>Notificações</span>
+										{unreadCount > 0 ? (
+											<Button
+												size="2xs"
+												variant="ghost"
+												onClick={() =>
+													void notificationsApi
+														.markAllRead()
+														.then(() => loadNotifications())
+												}
+											>
+												Marcar todas
+											</Button>
+										) : null}
 									</Popover.Header>
 									<Popover.Body>
 										<VStack align="stretch" gap={3}>
-											{MOCK_NOTIFICATIONS.map((n) => (
-												<Stack
-													key={n.id}
-													gap={0.5}
-													p={2}
-													rounded="md"
-													_hover={{ bg: "helios.subtle" }}
-												>
-													<Text fontSize="sm" fontWeight="600">
-														{n.title}
-													</Text>
-													<Text fontSize="xs" color="fg.muted">
-														{n.body}
-													</Text>
-													<Text fontSize="2xs" color="fg.muted">
-														{n.time}
-													</Text>
-												</Stack>
-											))}
+											{notifications.length === 0 ? (
+												<Text fontSize="sm" color="fg.muted">
+													Nenhuma notificação.
+												</Text>
+											) : (
+												notifications.map((n) => (
+													<Stack
+														key={n.id}
+														gap={0.5}
+														p={2}
+														rounded="md"
+														bg={n.readAt ? undefined : "helios.subtle"}
+														_hover={{ bg: "helios.subtle" }}
+														cursor="pointer"
+														onClick={() =>
+															void notificationsApi
+																.markRead(n.id)
+																.then(() => loadNotifications())
+																.then(() => {
+																	if (n.appointmentId) {
+																		navigate("/dashboard/agendamentos");
+																	}
+																})
+														}
+													>
+														<Text fontSize="sm" fontWeight="600">
+															{n.title}
+														</Text>
+														<Text fontSize="xs" color="fg.muted">
+															{n.body}
+														</Text>
+														<Text fontSize="2xs" color="fg.muted">
+															{formatRelativeTime(n.createdAt)}
+														</Text>
+													</Stack>
+												))
+											)}
 										</VStack>
 									</Popover.Body>
 								</Popover.Content>
