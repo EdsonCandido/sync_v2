@@ -26,6 +26,13 @@ Forward pelo **nome do container + porta interna**:
 
 DNS: ambos A/CNAME para o IP do servidor. SSL Let's Encrypt no NPM. Websocket on no proxy do web.
 
+### Gzip / compressão
+
+- O container `web` (`react-router-serve`) já aplica **gzip** via middleware `compression()` em HTML, JS, CSS e JSON.
+- PNG/WebP da landing **não** devem ser gzipados de novo (já comprimidos); o middleware pula `image/*`.
+- No NPM: deixe compressão do upstream passar. Se ativar gzip no NPM, evite recomprimir respostas que já venham com `Content-Encoding: gzip`.
+- Conferir: `curl -sI -H 'Accept-Encoding: gzip' https://sync.helioslabs.com.br/ | grep -i content-encoding` → espera `gzip` no HTML.
+
 Portas host `13001` / `13000` só para debug (`curl`); o NPM não precisa delas.
 
 ## Setup inicial
