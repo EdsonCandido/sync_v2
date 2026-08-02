@@ -7,6 +7,7 @@ import {
 	Grid,
 	Heading,
 	Icon,
+	Image,
 	SimpleGrid,
 	Stack,
 	Text,
@@ -14,7 +15,6 @@ import {
 import { motion } from "framer-motion";
 import {
 	LuArrowRight,
-	LuBolt,
 	LuChartColumn,
 	LuCheck,
 	LuShield,
@@ -23,9 +23,10 @@ import {
 } from "react-icons/lu";
 import { Link } from "react-router";
 
+import telaAdminPng from "@/assets/images/tela_admin.png";
+import telaAdminWebp from "@/assets/images/tela_admin.webp";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { HeliosCard } from "@/components/ui/HeliosCard";
-import { OrbitGrid } from "@/components/ui/OrbitGrid";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { SolarGlow } from "@/components/ui/SolarGlow";
 
@@ -419,8 +420,8 @@ export function LandingDemo() {
 						Um CRM que parece produto bilionário
 					</Heading>
 					<Text color="fg.muted">
-						Preview ilustrativo do dashboard — glass leve, glow solar, densidade
-						controlada.
+						Captura real do dashboard — insights, ações rápidas e widgets no
+						mesmo panorama.
 					</Text>
 				</Stack>
 				<HeliosCard
@@ -429,41 +430,18 @@ export function LandingDemo() {
 					borderColor="helios.border"
 					shadow="heliosLg"
 				>
-					<Box
-						h={{ base: "220px", md: "380px" }}
-						bgGradient="to-br"
-						gradientFrom="surface.dark"
-						gradientVia="helios.950"
-						gradientTo="surface.cardDark"
-						position="relative"
-					>
-						<OrbitGrid />
-						<SolarGlow intensity="soft" />
-						<Flex
-							position="relative"
-							zIndex={1}
-							h="full"
-							align="center"
-							justify="center"
-							direction="column"
-							gap={3}
-							px={6}
-							textAlign="center"
-						>
-							<Icon as={LuBolt} boxSize={8} color="helios.400" />
-							<Text
-								fontFamily="heading"
-								fontWeight="800"
-								fontSize={{ base: "xl", md: "2xl" }}
-								color="white"
-							>
-								Screenshot placeholder · Dashboard Helios
-							</Text>
-							<Text color="whiteAlpha.700" maxW="md" fontSize="sm">
-								Substitua por captura real quando preferir — a moldura já
-								respeita o DS.
-							</Text>
-						</Flex>
+					<Box as="picture" display="block" w="full">
+						<source srcSet={telaAdminWebp} type="image/webp" />
+						<Image
+							src={telaAdminPng}
+							alt="Dashboard Helios Labs — painel administrativo com insights, ações rápidas e widgets"
+							w="full"
+							h="auto"
+							display="block"
+							loading="lazy"
+							decoding="async"
+							fetchPriority="low"
+						/>
 					</Box>
 				</HeliosCard>
 			</Container>

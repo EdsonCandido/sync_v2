@@ -10,6 +10,8 @@ ENV VITE_SERVER_URL=${VITE_SERVER_URL}
 ENV NODE_ENV=production
 RUN cd apps/web && npm run build
 
+# Produção: react-router-serve aplica compression() (gzip) em HTML/JS/CSS/JSON.
+# Imagens (PNG/WebP/JPEG) já são comprimidas — middleware pula image/* (correto).
 FROM node:24-slim AS runner
 WORKDIR /app
 COPY --from=builder /app .
