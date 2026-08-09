@@ -23,7 +23,7 @@ export function createAuth(options: CreateAuthOptions = {}) {
 			provider: "pg",
 			schema: schema,
 		}),
-		trustedOrigins: [env.CORS_ORIGIN],
+		trustedOrigins: env.CORS_ORIGIN,
 		emailAndPassword: {
 			enabled: true,
 			minPasswordLength: 6,

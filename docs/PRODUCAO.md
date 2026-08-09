@@ -57,6 +57,7 @@ SEED_ON_START=true
 
 # apps/server/.env
 BETTER_AUTH_URL=https://api.sync.helioslabs.com.br
+# Um ou mais origins (vírgula): https://a.com,https://b.com
 CORS_ORIGIN=https://sync.helioslabs.com.br
 # DATABASE_URL no container aponta para o serviço postgres (compose injeta):
 # postgresql://postgres:...@postgres:5432/sync_v2
