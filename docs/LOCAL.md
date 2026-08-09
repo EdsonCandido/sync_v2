@@ -36,7 +36,7 @@ Ajuste senhas e `BETTER_AUTH_SECRET` (≥ 32 caracteres) em `apps/server/.env`.
 | `.env` | `SEED_ON_START` | `false` (seed manual no local) |
 | `apps/server/.env` | `DATABASE_URL` | `postgresql://postgres:password@localhost:15432/sync_v2` |
 | `apps/server/.env` | `BETTER_AUTH_URL` | `http://localhost:3000` |
-| `apps/server/.env` | `CORS_ORIGIN` | `http://localhost:5173` |
+| `apps/server/.env` | `CORS_ORIGIN` | `http://localhost:5173` (vários: vírgula) |
 | `apps/web/.env` | `VITE_SERVER_URL` | `http://localhost:3000` |
 
 A porta **15432** é a publicação do Compose no host (`127.0.0.1`). Dentro do container o Postgres continua em `5432`.
@@ -120,4 +120,4 @@ Para subir web + server + postgres como containers (não é o fluxo padrão de d
 | `docker.sock: no such file` | Docker Desktop ainda não subiu — espere e rode `docker ps` |
 | `network proxy ... not found` | Falta `docker network create proxy` |
 | `db:push` / seed não conecta | `DATABASE_URL` na porta errada (use `15432`, não `5432`) |
-| CORS / login falha no browser | `CORS_ORIGIN` deve ser `http://localhost:5173` no `npm run dev` |
+| CORS / login falha no browser | `CORS_ORIGIN` deve incluir `http://localhost:5173` no `npm run dev` (vários origins: vírgula) |
