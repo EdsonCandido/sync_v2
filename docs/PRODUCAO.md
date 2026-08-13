@@ -26,6 +26,8 @@ Forward pelo **nome do container + porta interna**:
 
 DNS: ambos A/CNAME para o IP do servidor. SSL Let's Encrypt no NPM. Websocket on no proxy do web.
 
+Rate limit (login + ITR público) usa o IP do cliente via `X-Forwarded-For` / `X-Real-IP`. No NPM, **não** remova esses headers. O server usa `trust proxy = 1` (um hop = NPM).
+
 ### Gzip / compressão
 
 - O container `web` (`react-router-serve`) já aplica **gzip** via middleware `compression()` em HTML, JS, CSS e JSON.
