@@ -77,9 +77,24 @@ export function createAuth(options: CreateAuthOptions = {}) {
 		},
 		secret: env.BETTER_AUTH_SECRET,
 		baseURL: env.BETTER_AUTH_URL,
+		rateLimit: {
+			enabled: true,
+			window: 60,
+			max: 100,
+			storage: "memory",
+			customRules: {
+				"/sign-in/email": {
+					window: 900,
+					max: 10,
+				},
+			},
+		},
 		advanced: {
 			database: {
 				generateId: "uuid",
+			},
+			ipAddress: {
+				ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
 			},
 			defaultCookieAttributes: {
 				sameSite: "none",
