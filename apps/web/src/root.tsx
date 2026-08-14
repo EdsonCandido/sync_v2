@@ -1,4 +1,5 @@
 import { Code, Container, Grid, Heading, Text } from "@chakra-ui/react";
+import { useEffect, useRef } from "react";
 import {
 	isRouteErrorResponse,
 	Links,
@@ -14,6 +15,15 @@ import Header from "./components/header";
 import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
 
+const GA_MEASUREMENT_ID = "G-94RFB4E3W1";
+
+declare global {
+	interface Window {
+		dataLayer?: unknown[];
+		gtag?: (...args: unknown[]) => void;
+	}
+}
+
 export const links: Route.LinksFunction = () => [
 	{ rel: "preconnect", href: "https://fonts.googleapis.com" },
 	{
@@ -27,6 +37,26 @@ export const links: Route.LinksFunction = () => [
 	},
 ];
 
+function GoogleAnalyticsPageview() {
+	const location = useLocation();
+	const isFirstRender = useRef(true);
+
+	useEffect(() => {
+		// gtag('config') no <head> já envia a pageview inicial
+		if (isFirstRender.current) {
+			isFirstRender.current = false;
+			return;
+		}
+		if (typeof window.gtag !== "function") return;
+
+		window.gtag("config", GA_MEASUREMENT_ID, {
+			page_path: `${location.pathname}${location.search}`,
+		});
+	}, [location.pathname, location.search]);
+
+	return null;
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="pt-BR" suppressHydrationWarning>
@@ -35,6 +65,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				<meta name="viewport" content="width=device-width, initial-scale=1" />
 				<Meta />
 				<Links />
+				{/* Google tag (gtag.js) */}
+				<script
+					async
+					src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+				/>
+				<script
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: Google Analytics snippet
+					dangerouslySetInnerHTML={{
+						__html: `
+							window.dataLayer = window.dataLayer || [];
+							function gtag(){dataLayer.push(arguments);}
+							gtag('js', new Date());
+							gtag('config', '${GA_MEASUREMENT_ID}');
+						`,
+					}}
+				/>
 			</head>
 			<body>
 				<Provider defaultTheme="dark" storageKey="sync-ui-color-mode">
@@ -51,22 +97,23 @@ export default function App() {
 	const { pathname } = useLocation();
 	const isDashboard = pathname.startsWith("/dashboard");
 
-	if (isDashboard) {
-		return (
-			<>
-				<Outlet />
-				<Toaster />
-			</>
-		);
-	}
-
 	return (
 		<>
-			<Grid templateRows="auto 1fr" h="100svh">
-				<Header />
-				<Outlet />
-			</Grid>
-			<Toaster />
+			<GoogleAnalyticsPageview />
+			{isDashboard ? (
+				<>
+					<Outlet />
+					<Toaster />
+				</>
+			) : (
+				<>
+					<Grid templateRows="auto 1fr" h="100svh">
+						<Header />
+						<Outlet />
+					</Grid>
+					<Toaster />
+				</>
+			)}
 		</>
 	);
 }
