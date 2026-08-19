@@ -86,10 +86,18 @@ export type KanbanCardClient = {
 	state: string;
 };
 
+export type KanbanCardFinancialEntry = {
+	id: string;
+	kind: "receber" | "pagar";
+	status: "em_aberto" | "parcial" | "pago" | "cancelado" | "vencido";
+	valorOriginal: number;
+};
+
 export type KanbanCardDetail = KanbanCard & {
 	client: KanbanCardClient | null;
 	history: KanbanHistoryItem[];
 	attachments: KanbanAttachment[];
+	financialEntries: KanbanCardFinancialEntry[];
 };
 
 export type KanbanColumn = {

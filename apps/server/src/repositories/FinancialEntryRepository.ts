@@ -10,7 +10,18 @@ import {
 	financialEntryPayments,
 	suppliers,
 } from "@sync_v2/db/schema/financeiro";
-import { and, count, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
+import {
+	and,
+	count,
+	desc,
+	eq,
+	gte,
+	ilike,
+	lte,
+	ne,
+	or,
+	sql,
+} from "drizzle-orm";
 
 export type FinancialEntryInsert = {
 	companyId: string;
@@ -90,6 +101,28 @@ export class FinancialEntryRepository {
 			categoryName: row.categoryName,
 			costCenterName: row.costCenterName,
 		};
+	}
+
+	async listActiveByKanbanCardId(cardId: string, companyId: string) {
+		const rows = await db
+			.select({ entry: financialEntries })
+			.from(financialEntries)
+			.where(
+				and(
+					eq(financialEntries.kanbanCardId, cardId),
+					eq(financialEntries.companyId, companyId),
+					eq(financialEntries.ativo, true),
+					ne(financialEntries.status, "cancelado"),
+				),
+			)
+			.orderBy(desc(financialEntries.createdAt));
+		const today = startOfDay(new Date());
+		return rows.map((row) => ({
+			id: row.entry.id,
+			kind: row.entry.kind,
+			status: deriveStatus(row.entry.status, row.entry.dataVencimento, today),
+			valorOriginal: row.entry.valorOriginal,
+		}));
 	}
 
 	async list(params: {

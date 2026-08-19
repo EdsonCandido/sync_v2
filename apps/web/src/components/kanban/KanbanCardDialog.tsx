@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { LuBanknote, LuPlus, LuX } from "react-icons/lu";
+import { useNavigate } from "react-router";
 
 import { useModuleAccess } from "@/components/dashboard/ModuleAccessProvider";
 import { FinancialEntryFormDialog } from "@/components/financeiro/FinancialEntryFormDialog";
@@ -90,12 +91,16 @@ export function KanbanCardDialog({
 	const [uploading, setUploading] = useState(false);
 	const [financeOpen, setFinanceOpen] = useState(false);
 	const [recreateOpen, setRecreateOpen] = useState(false);
-	const { canEdit } = useModuleAccess();
+	const { canEdit, canRead } = useModuleAccess();
 	const canFinanceEdit = canEdit("financeiro");
+	const canFinanceRead = canRead("financeiro");
+	const navigate = useNavigate();
 
 	const readOnly = !allowEdit;
 	const currentColumnId = detail?.columnId ?? card?.columnId ?? columnId;
 	const currentColumn = columns.find((c) => c.id === currentColumnId);
+	const financialEntries = detail?.financialEntries ?? [];
+	const existingFinance = financialEntries[0];
 	const canRecreate =
 		mode === "edit" &&
 		allowEdit &&
@@ -131,6 +136,7 @@ export function KanbanCardDialog({
 		setChecklistTitle("");
 		setObservation("");
 		setLoading(true);
+		setDetail(null);
 		void kanbanApi
 			.getCard(card.id)
 			.then((d) => {
@@ -580,7 +586,31 @@ export function KanbanCardDialog({
 											Recriar em outro kanban
 										</Button>
 									) : null}
-									{mode === "edit" && card && canFinanceEdit ? (
+									{mode === "edit" &&
+									card &&
+									!loading &&
+									existingFinance &&
+									canFinanceRead ? (
+										<Button
+											variant="outline"
+											onClick={() => {
+												const path =
+													existingFinance.kind === "pagar"
+														? "/dashboard/financeiro/contas-a-pagar"
+														: "/dashboard/financeiro/contas-a-receber";
+												onOpenChange(false);
+												navigate(`${path}?id=${existingFinance.id}`);
+											}}
+										>
+											<LuBanknote />
+											Ver no financeiro
+										</Button>
+									) : null}
+									{mode === "edit" &&
+									card &&
+									!loading &&
+									!existingFinance &&
+									canFinanceEdit ? (
 										<Button
 											variant="outline"
 											onClick={() => setFinanceOpen(true)}
@@ -623,6 +653,8 @@ export function KanbanCardDialog({
 							title: "Lançamento criado a partir do card",
 							type: "success",
 						});
+						if (!card) return;
+						void kanbanApi.getCard(card.id).then(setDetail);
 					}}
 				/>
 			) : null}
