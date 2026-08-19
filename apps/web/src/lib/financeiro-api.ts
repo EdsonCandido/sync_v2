@@ -54,7 +54,7 @@ export type FinancialEntry = {
 	id: string;
 	companyId: string;
 	kind: "receber" | "pagar";
-	originType: "avulsa" | "kanban" | "manual";
+	originType: "avulsa" | "kanban" | "manual" | "itr";
 	originLabel: string | null;
 	kanbanCardId: string | null;
 	clientId: string | null;
@@ -228,7 +228,7 @@ export type ListResult<T> = {
 
 export type FinancialEntryInput = {
 	kind: "receber" | "pagar";
-	originType?: "avulsa" | "kanban" | "manual";
+	originType?: "avulsa" | "kanban" | "manual" | "itr";
 	originLabel?: string | null;
 	kanbanCardId?: string | null;
 	clientId?: string | null;

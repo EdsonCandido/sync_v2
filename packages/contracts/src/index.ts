@@ -698,10 +698,22 @@ export const kanbanCardClientSchema = z.object({
 
 export type KanbanCardClient = z.infer<typeof kanbanCardClientSchema>;
 
+export const kanbanCardFinancialEntrySchema = z.object({
+	id: z.string().uuid(),
+	kind: z.enum(["receber", "pagar"]),
+	status: z.enum(["em_aberto", "parcial", "pago", "cancelado", "vencido"]),
+	valorOriginal: z.number(),
+});
+
+export type KanbanCardFinancialEntry = z.infer<
+	typeof kanbanCardFinancialEntrySchema
+>;
+
 export const kanbanCardDetailSchema = kanbanCardSchema.extend({
 	client: kanbanCardClientSchema.nullable(),
 	history: z.array(kanbanHistoryItemSchema),
 	attachments: z.array(kanbanAttachmentSchema),
+	financialEntries: z.array(kanbanCardFinancialEntrySchema),
 });
 
 export type KanbanCardDetail = z.infer<typeof kanbanCardDetailSchema>;

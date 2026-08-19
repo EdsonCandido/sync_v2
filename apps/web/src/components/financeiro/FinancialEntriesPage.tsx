@@ -12,7 +12,8 @@ import {
 	Table,
 	Text,
 } from "@chakra-ui/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 
 import { useModuleAccess } from "@/components/dashboard/ModuleAccessProvider";
 import { FinancialEntryFormDialog } from "@/components/financeiro/FinancialEntryFormDialog";
@@ -48,6 +49,9 @@ const STATUS_COLOR: Record<FinancialEntry["status"], string> = {
 	vencido: "orange",
 };
 
+const UUID_RE =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function todayIsoDate() {
 	return new Date().toISOString().slice(0, 10);
 }
@@ -64,6 +68,10 @@ function monthRange() {
 export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 	const { canEdit } = useModuleAccess();
 	const allowEdit = canEdit("financeiro");
+	const [searchParams] = useSearchParams();
+	const navigate = useNavigate();
+	const highlightId = searchParams.get("id");
+	const openedQueryId = useRef<string | null>(null);
 
 	const defaults = monthRange();
 	const [items, setItems] = useState<FinancialEntry[]>([]);
@@ -131,6 +139,49 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 	useEffect(() => {
 		void load();
 	}, [load]);
+
+	useEffect(() => {
+		if (!highlightId || !UUID_RE.test(highlightId)) return;
+		if (openedQueryId.current === highlightId) return;
+		let cancelled = false;
+		void (async () => {
+			try {
+				const entry = await financeiroApi.findLancamento(highlightId);
+				if (cancelled) return;
+				if (entry.kind !== kind) {
+					const path =
+						entry.kind === "pagar"
+							? "/dashboard/financeiro/contas-a-pagar"
+							: "/dashboard/financeiro/contas-a-receber";
+					navigate(`${path}?id=${entry.id}`, { replace: true });
+					return;
+				}
+				openedQueryId.current = highlightId;
+				const venc = entry.dataVencimento.slice(0, 10);
+				setFrom((prev) => (prev <= venc ? prev : venc));
+				setTo((prev) => (prev >= venc ? prev : venc));
+				setFromDraft((prev) => (prev <= venc ? prev : venc));
+				setToDraft((prev) => (prev >= venc ? prev : venc));
+				setQ("");
+				setSearch("");
+				setStatus("");
+				setPage(1);
+				setEditingEntry(entry);
+				setFormOpen(true);
+			} catch (error) {
+				toaster.create({
+					title:
+						error instanceof ApiError
+							? error.message
+							: "Lançamento não encontrado",
+					type: "error",
+				});
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [highlightId, kind, navigate]);
 
 	useEffect(() => {
 		const t = setTimeout(() => {
@@ -368,7 +419,10 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 									item.valorPago === 0 && item.status !== "cancelado";
 
 								return (
-									<Table.Row key={item.id}>
+									<Table.Row
+										key={item.id}
+										bg={item.id === highlightId ? "bg.muted" : undefined}
+									>
 										<Table.Cell fontWeight="medium">{docLabel}</Table.Cell>
 										<Table.Cell>{partyName}</Table.Cell>
 										<Table.Cell hideBelow="md">

@@ -1,3 +1,4 @@
+import { FinancialEntryRepository } from "../repositories/FinancialEntryRepository";
 import { KanbanAttachmentRepository } from "../repositories/KanbanAttachmentRepository";
 import { KanbanCardRepository } from "../repositories/KanbanCardRepository";
 import { KanbanChecklistRepository } from "../repositories/KanbanChecklistRepository";
@@ -13,6 +14,7 @@ export class FindKanbanCardService {
 		private readonly historyRepository = new KanbanHistoryRepository(),
 		private readonly tagRepository = new KanbanTagRepository(),
 		private readonly attachmentRepository = new KanbanAttachmentRepository(),
+		private readonly financialEntryRepository = new FinancialEntryRepository(),
 	) {}
 
 	async execute(
@@ -33,11 +35,24 @@ export class FindKanbanCardService {
 			perfil: params.perfil,
 		});
 
-		const assignees = await this.cardRepository.listAssignees(id);
-		const checklistItems = await this.checklistRepository.listByCard(id);
-		const history = await this.historyRepository.listByCard(id);
-		const tagRows = await this.tagRepository.listTagsForCards([id]);
-		const attachments = await this.attachmentRepository.listByCard(id);
+		const [
+			assignees,
+			checklistItems,
+			history,
+			tagRows,
+			attachments,
+			financialRows,
+		] = await Promise.all([
+			this.cardRepository.listAssignees(id),
+			this.checklistRepository.listByCard(id),
+			this.historyRepository.listByCard(id),
+			this.tagRepository.listTagsForCards([id]),
+			this.attachmentRepository.listByCard(id),
+			this.financialEntryRepository.listActiveByKanbanCardId(
+				id,
+				params.companyId,
+			),
+		]);
 		const observationCount = history.filter(
 			(h) => h.eventType === "observation",
 		).length;
@@ -113,6 +128,27 @@ export class FindKanbanCardService {
 				userName: h.userName ?? null,
 				createdAt: h.createdAt,
 			})),
+			financialEntries: financialRows.map((entry) => ({
+				id: entry.id,
+				kind:
+					entry.kind === "pagar" ? ("pagar" as const) : ("receber" as const),
+				status: toFinancialStatus(entry.status),
+				valorOriginal: entry.valorOriginal,
+			})),
 		};
 	}
+}
+
+function toFinancialStatus(
+	status: string,
+): "em_aberto" | "parcial" | "pago" | "cancelado" | "vencido" {
+	if (
+		status === "parcial" ||
+		status === "pago" ||
+		status === "cancelado" ||
+		status === "vencido"
+	) {
+		return status;
+	}
+	return "em_aberto";
 }

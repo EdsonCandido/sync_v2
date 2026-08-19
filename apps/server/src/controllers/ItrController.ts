@@ -178,13 +178,23 @@ export class ItrController {
 	};
 }
 
+/** Reais já numéricos (`30` / `"30"` / `"30.00"`). Máscara BRL (`R$ 30,00`) vira dígitos/100. */
+function parseItrValor(raw: unknown): number {
+	if (typeof raw === "number") return raw;
+	if (typeof raw !== "string") return Number.NaN;
+	const trimmed = raw.trim();
+	if (!trimmed) return Number.NaN;
+	if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+	const digits = trimmed.replace(/\D/g, "");
+	return digits ? Number(digits) / 100 : Number.NaN;
+}
+
 function parseCreateBody(body: unknown) {
 	const raw =
 		body && typeof body === "object" ? (body as Record<string, unknown>) : {};
 	const normalized: Record<string, unknown> = { ...raw };
-	if (typeof raw.valor === "string") {
-		const digits = String(raw.valor).replace(/\D/g, "");
-		normalized.valor = digits ? Number(digits) / 100 : Number.NaN;
+	if (raw.valor !== undefined) {
+		normalized.valor = parseItrValor(raw.valor);
 	}
 	if (typeof raw.document === "string") {
 		normalized.document = raw.document.replace(/\D/g, "");
