@@ -929,6 +929,7 @@ export const createFinancialEntrySchema = z.object({
 	dataVencimento: z.coerce.date(),
 	observacoes: z.string().optional().nullable(),
 	parcelas: z.number().int().min(1).max(120).optional(),
+	parcelamentoModo: z.enum(["dividir", "repetir"]).optional(),
 });
 
 export type CreateFinancialEntryInput = z.infer<
