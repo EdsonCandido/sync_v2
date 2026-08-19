@@ -8,6 +8,10 @@ dist
 build
 *.tsbuildinfo
 
+# Accidental tsc emit next to TypeScript sources (repo is TS-only)
+apps/**/*.js
+packages/**/*.js
+
 # Generated files
 apps/web/src/routeTree.gen.ts
 
