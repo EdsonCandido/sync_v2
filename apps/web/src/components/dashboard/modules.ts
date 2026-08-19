@@ -6,6 +6,7 @@ import {
 	LuClipboardList,
 	LuHouse,
 	LuKanban,
+	LuMapPin,
 	LuShield,
 	LuUsers,
 	LuWallet,
@@ -100,6 +101,13 @@ export const DASHBOARD_MODULES: DashboardModule[] = [
 		label: "Planos",
 		path: "/dashboard/planos",
 		icon: LuBadgeDollarSign,
+		superOnly: true,
+	},
+	{
+		id: "acessos",
+		label: "Acessos",
+		path: "/dashboard/acessos",
+		icon: LuMapPin,
 		superOnly: true,
 	},
 ];

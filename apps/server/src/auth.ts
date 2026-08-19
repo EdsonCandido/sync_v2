@@ -1,10 +1,13 @@
 import { createAuth } from "@sync_v2/auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
+import { RecordLoginAccessService } from "./services/RecordLoginAccessService";
 import { RecordUserAccessService } from "./services/RecordUserAccessService";
 import { ValidateLoginAccessService } from "./services/ValidateLoginAccessService";
+import { extractClientIp, headerValue } from "./utils/clientIp";
 
 const validateLoginAccess = new ValidateLoginAccessService();
 const recordUserAccess = new RecordUserAccessService();
+const recordLoginAccess = new RecordLoginAccessService();
 
 export const auth = createAuth({
 	hooks: {
@@ -58,6 +61,22 @@ export const auth = createAuth({
 				});
 			} catch {
 				// access tracking must not block login
+			}
+
+			try {
+				const session = returned?.session as
+					| { token?: string; id?: string }
+					| undefined;
+				await recordLoginAccess.execute({
+					userId: user.id,
+					companyId: user.companyId,
+					sessionToken: session?.token,
+					sessionId: session?.id,
+					ipAddress: extractClientIp(ctx.headers),
+					userAgent: headerValue(ctx.headers, "user-agent"),
+				});
+			} catch {
+				// login history must not block login
 			}
 		}),
 	},
