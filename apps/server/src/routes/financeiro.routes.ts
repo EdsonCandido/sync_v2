@@ -161,6 +161,11 @@ financeiroRoutes.delete(
 
 financeiroRoutes.get("/lancamentos", readAccess.handle, entryController.list);
 financeiroRoutes.get(
+	"/lancamentos/grupo/:groupId",
+	readAccess.handle,
+	entryController.listGroup,
+);
+financeiroRoutes.get(
 	"/lancamentos/:id",
 	readAccess.handle,
 	entryController.find,

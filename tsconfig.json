@@ -1,3 +1,6 @@
 {
-	"extends": "@sync_v2/config/tsconfig.base.json"
+	"extends": "@sync_v2/config/tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true
+	}
 }

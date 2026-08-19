@@ -79,12 +79,19 @@ export class CreateFinancialEntryService {
 		}
 
 		const groupId = createId();
-		const base = round2(totalLiquido / parcelas);
-		const valores: number[] = Array.from({ length: parcelas }, () => base);
-		const soma = round2(valores.reduce((a, b) => a + b, 0));
-		const lastIndex = parcelas - 1;
-		const lastValor = valores[lastIndex] ?? base;
-		valores[lastIndex] = round2(lastValor + (totalLiquido - soma));
+		const modo = input.parcelamentoModo === "repetir" ? "repetir" : "dividir";
+		let valores: number[];
+		if (modo === "repetir") {
+			const unit = round2(totalLiquido);
+			valores = Array.from({ length: parcelas }, () => unit);
+		} else {
+			const base = round2(totalLiquido / parcelas);
+			valores = Array.from({ length: parcelas }, () => base);
+			const soma = round2(valores.reduce((a, b) => a + b, 0));
+			const lastIndex = parcelas - 1;
+			const lastValor = valores[lastIndex] ?? base;
+			valores[lastIndex] = round2(lastValor + (totalLiquido - soma));
+		}
 
 		const rows = valores.map((valor, index) => ({
 			companyId: params.companyId,

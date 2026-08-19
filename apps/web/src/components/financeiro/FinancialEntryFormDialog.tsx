@@ -5,10 +5,13 @@ import {
 	HStack,
 	Input,
 	NativeSelect,
+	RadioGroup,
 	Stack,
+	Table,
+	Text,
 	Textarea,
 } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { MoneyInput } from "@/components/ui/money-input";
 import { toaster } from "@/components/ui/toaster";
@@ -20,6 +23,8 @@ import {
 	type FinancialCategory,
 	type FinancialEntry,
 	financeiroApi,
+	formatDate,
+	formatMoney,
 	type Supplier,
 } from "@/lib/financeiro-api";
 import { numberToMoneyInput, parseMoneyInput } from "@/lib/money";
@@ -42,6 +47,8 @@ type FinancialEntryFormDialogProps = {
 	onSaved?: () => void;
 };
 
+type ParcelamentoModo = "dividir" | "repetir";
+
 type FormState = {
 	valorOriginal: string;
 	dataEmissao: string;
@@ -56,15 +63,60 @@ type FormState = {
 	documento: string;
 	numero: string;
 	parcelas: string;
+	parcelamentoModo: ParcelamentoModo;
 	observacoes: string;
 };
 
+const STATUS_LABEL: Record<FinancialEntry["status"], string> = {
+	em_aberto: "Em aberto",
+	parcial: "Parcial",
+	pago: "Pago",
+	cancelado: "Cancelado",
+	vencido: "Vencido",
+};
+
 function todayIsoDate() {
-	return new Date().toISOString().slice(0, 10);
+	const now = new Date();
+	const year = now.getFullYear();
+	const month = String(now.getMonth() + 1).padStart(2, "0");
+	const day = String(now.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
 }
 
 function toDateInputValue(value: string) {
 	return value.slice(0, 10);
+}
+
+function round2(n: number) {
+	return Math.round(n * 100) / 100;
+}
+
+function addMonthsIso(iso: string, months: number) {
+	const [year, month, day] = iso.split("-").map(Number);
+	const date = new Date(year ?? 0, (month ?? 1) - 1, day ?? 1);
+	date.setMonth(date.getMonth() + months);
+	const y = date.getFullYear();
+	const m = String(date.getMonth() + 1).padStart(2, "0");
+	const d = String(date.getDate()).padStart(2, "0");
+	return `${y}-${m}-${d}`;
+}
+
+function installmentValues(
+	totalLiquido: number,
+	parcelas: number,
+	modo: ParcelamentoModo,
+): number[] {
+	if (modo === "repetir") {
+		const unit = round2(totalLiquido);
+		return Array.from({ length: parcelas }, () => unit);
+	}
+	const base = round2(totalLiquido / parcelas);
+	const valores = Array.from({ length: parcelas }, () => base);
+	const soma = round2(valores.reduce((a, b) => a + b, 0));
+	const lastIndex = parcelas - 1;
+	const lastValor = valores[lastIndex] ?? base;
+	valores[lastIndex] = round2(lastValor + (totalLiquido - soma));
+	return valores;
 }
 
 function buildEmptyForm(defaults?: FinancialEntryFormDefaults): FormState {
@@ -87,6 +139,7 @@ function buildEmptyForm(defaults?: FinancialEntryFormDefaults): FormState {
 		documento: "",
 		numero: "",
 		parcelas: "1",
+		parcelamentoModo: "dividir",
 		observacoes: "",
 	};
 }
@@ -106,8 +159,13 @@ function buildFormFromEntry(entry: FinancialEntry): FormState {
 		documento: entry.documento ?? "",
 		numero: entry.numero ?? "",
 		parcelas: String(entry.installmentTotal ?? 1),
+		parcelamentoModo: "dividir",
 		observacoes: entry.observacoes ?? "",
 	};
+}
+
+function formsEqual(a: FormState, b: FormState) {
+	return JSON.stringify(a) === JSON.stringify(b);
 }
 
 export function FinancialEntryFormDialog({
@@ -120,9 +178,14 @@ export function FinancialEntryFormDialog({
 	onCreated,
 	onSaved,
 }: FinancialEntryFormDialogProps) {
-	const isEdit = mode === "edit" && !!entry;
+	const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
+	const [activeEntry, setActiveEntry] = useState<FinancialEntry | null>(null);
+	const isEdit = mode === "edit" && !!(activeEntry ?? entry);
+	const currentEntry = activeEntry ?? entry;
 	const [form, setForm] = useState<FormState>(() => buildEmptyForm(defaults));
 	const [saving, setSaving] = useState(false);
+	const [switching, setSwitching] = useState(false);
+	const [groupItems, setGroupItems] = useState<FinancialEntry[]>([]);
 	const [categories, setCategories] = useState<FinancialCategory[]>([]);
 	const [centros, setCentros] = useState<CostCenter[]>([]);
 	const [bancos, setBancos] = useState<BankAccount[]>([]);
@@ -130,17 +193,68 @@ export function FinancialEntryFormDialog({
 	const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
 	useEffect(() => {
-		if (!open) return;
+		if (!open) {
+			setActiveEntryId(null);
+			setActiveEntry(null);
+			setGroupItems([]);
+			return;
+		}
+		if (mode === "edit" && entry?.id) {
+			setActiveEntryId(entry.id);
+		} else {
+			setActiveEntryId(null);
+		}
+	}, [open, mode, entry?.id]);
+
+	useEffect(() => {
+		if (!open || mode !== "edit" || !activeEntryId) return;
+		let cancelled = false;
+		setSwitching(true);
+		void (async () => {
+			try {
+				const loaded = await financeiroApi.getLancamento(activeEntryId);
+				if (cancelled) return;
+				setActiveEntry(loaded);
+				setForm(buildFormFromEntry(loaded));
+			} catch (error) {
+				if (cancelled) return;
+				toaster.create({
+					title:
+						error instanceof ApiError
+							? error.message
+							: "Erro ao abrir parcela",
+					type: "error",
+				});
+			} finally {
+				if (!cancelled) setSwitching(false);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [open, mode, activeEntryId]);
+
+	useEffect(() => {
+		if (!open || mode === "edit") return;
 		setForm(
-			isEdit && entry
-				? buildFormFromEntry(entry)
-				: buildEmptyForm({
-						kanbanCardId: defaults?.kanbanCardId,
-						originLabel: defaults?.originLabel,
-						clientId: defaults?.clientId,
-						originType: defaults?.originType,
-					}),
+			buildEmptyForm({
+				kanbanCardId: defaults?.kanbanCardId,
+				originLabel: defaults?.originLabel,
+				clientId: defaults?.clientId,
+				originType: defaults?.originType,
+			}),
 		);
+	}, [
+		open,
+		mode,
+		defaults?.kanbanCardId,
+		defaults?.originLabel,
+		defaults?.clientId,
+		defaults?.originType,
+	]);
+
+	useEffect(() => {
+		if (!open) return;
 		void (async () => {
 			try {
 				const tipo = kind === "receber" ? "receita" : "despesa";
@@ -172,20 +286,79 @@ export function FinancialEntryFormDialog({
 				});
 			}
 		})();
+	}, [open, kind]);
+
+	useEffect(() => {
+		if (!open || mode !== "edit" || !currentEntry?.installmentGroupId) {
+			setGroupItems([]);
+			return;
+		}
+		const groupId = currentEntry.installmentGroupId;
+		let cancelled = false;
+		void (async () => {
+			try {
+				const result = await financeiroApi.listLancamentosGrupo(groupId);
+				if (!cancelled) setGroupItems(result.items);
+			} catch (error) {
+				if (cancelled) return;
+				setGroupItems([]);
+				toaster.create({
+					title:
+						error instanceof ApiError
+							? error.message
+							: "Erro ao carregar parcelas",
+					type: "error",
+				});
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [open, mode, currentEntry?.installmentGroupId]);
+
+	const parcelasCount = Math.max(1, Number(form.parcelas) || 1);
+	const showParcelamento = !isEdit && parcelasCount > 1;
+	const previewRows = useMemo(() => {
+		if (!showParcelamento) return [];
+		const valor = parseMoneyInput(form.valorOriginal);
+		if (!valor || valor <= 0 || !form.dataVencimento) return [];
+		const valores = installmentValues(
+			valor,
+			parcelasCount,
+			form.parcelamentoModo,
+		);
+		return valores.map((parcelaValor, index) => ({
+			numero: index + 1,
+			vencimento: addMonthsIso(form.dataVencimento, index),
+			valor: parcelaValor,
+		}));
 	}, [
-		open,
-		kind,
-		isEdit,
-		entry,
-		defaults?.kanbanCardId,
-		defaults?.originLabel,
-		defaults?.clientId,
-		defaults?.originType,
+		showParcelamento,
+		form.valorOriginal,
+		form.dataVencimento,
+		form.parcelamentoModo,
+		parcelasCount,
 	]);
+	const previewTotal = round2(previewRows.reduce((a, r) => a + r.valor, 0));
 
 	function notifySaved() {
 		if (onSaved) onSaved();
 		else onCreated?.();
+	}
+
+	async function switchToEntry(next: FinancialEntry) {
+		if (!currentEntry || next.id === currentEntry.id) return;
+		if (next.id === activeEntryId) return;
+		const dirty = !formsEqual(form, buildFormFromEntry(currentEntry));
+		if (
+			dirty &&
+			!window.confirm(
+				"Há alterações não salvas. Trocar de parcela mesmo assim?",
+			)
+		) {
+			return;
+		}
+		setActiveEntryId(next.id);
 	}
 
 	async function handleSave() {
@@ -194,10 +367,10 @@ export function FinancialEntryFormDialog({
 			return;
 		}
 
-		if (isEdit && entry) {
+		if (isEdit && currentEntry) {
 			setSaving(true);
 			try {
-				await financeiroApi.updateLancamento(entry.id, {
+				await financeiroApi.updateLancamento(currentEntry.id, {
 					originLabel: form.originLabel.trim() || null,
 					clientId: kind === "receber" ? form.clientId || null : null,
 					supplierId: kind === "pagar" ? form.supplierId || null : null,
@@ -240,7 +413,7 @@ export function FinancialEntryFormDialog({
 		try {
 			const originType =
 				defaults?.originType === "kanban" ? "kanban" : form.originType;
-			await financeiroApi.createLancamento({
+			const created = await financeiroApi.createLancamento({
 				kind,
 				originType,
 				originLabel: form.originLabel.trim() || null,
@@ -257,12 +430,22 @@ export function FinancialEntryFormDialog({
 				dataVencimento: form.dataVencimento,
 				observacoes: form.observacoes.trim() || null,
 				parcelas,
+				parcelamentoModo: parcelas > 1 ? form.parcelamentoModo : undefined,
 			});
+			const createdCount =
+				created &&
+				typeof created === "object" &&
+				"items" in created &&
+				Array.isArray(created.items)
+					? created.items.length
+					: 1;
 			toaster.create({
 				title:
-					kind === "receber"
-						? "Conta a receber criada"
-						: "Conta a pagar criada",
+					createdCount > 1
+						? `${createdCount} parcelas criadas`
+						: kind === "receber"
+							? "Conta a receber criada"
+							: "Conta a pagar criada",
 				type: "success",
 			});
 			onOpenChange(false);
@@ -286,18 +469,66 @@ export function FinancialEntryFormDialog({
 			: "Nova conta a pagar";
 
 	const showOriginFields = isEdit || defaults?.originType !== "kanban";
+	const showGroup = isEdit && groupItems.length > 1;
 
 	return (
 		<Dialog.Root open={open} onOpenChange={(e) => onOpenChange(e.open)}>
 			<Dialog.Backdrop />
 			<Dialog.Positioner>
-				<Dialog.Content bg="bg.panel" maxW="640px">
+				<Dialog.Content bg="bg.panel" maxW={showGroup ? "3xl" : "640px"}>
 					<Dialog.Header>
 						<Dialog.Title>{title}</Dialog.Title>
 						<Dialog.CloseTrigger />
 					</Dialog.Header>
 					<Dialog.Body>
 						<Stack gap={4}>
+							{showGroup ? (
+								<Stack gap={2}>
+									<Text fontWeight="medium">Parcelas do grupo</Text>
+									<Table.ScrollArea maxH="220px">
+										<Table.Root size="sm" stickyHeader>
+											<Table.Header>
+												<Table.Row>
+													<Table.ColumnHeader>Nº</Table.ColumnHeader>
+													<Table.ColumnHeader>Vencimento</Table.ColumnHeader>
+													<Table.ColumnHeader textAlign="end">
+														Valor
+													</Table.ColumnHeader>
+													<Table.ColumnHeader>Status</Table.ColumnHeader>
+												</Table.Row>
+											</Table.Header>
+											<Table.Body>
+												{groupItems.map((item) => {
+													const current = item.id === activeEntryId;
+													return (
+														<Table.Row
+															key={item.id}
+															cursor={current ? "default" : "pointer"}
+															bg={current ? "bg.muted" : undefined}
+															opacity={switching ? 0.7 : 1}
+															onClick={() => void switchToEntry(item)}
+														>
+															<Table.Cell>
+																{`${item.installmentNumber ?? "—"}/${item.installmentTotal ?? "—"}`}
+															</Table.Cell>
+															<Table.Cell>
+																{formatDate(item.dataVencimento)}
+															</Table.Cell>
+															<Table.Cell textAlign="end">
+																{formatMoney(item.valorOriginal)}
+															</Table.Cell>
+															<Table.Cell>
+																{STATUS_LABEL[item.status] ?? item.status}
+															</Table.Cell>
+														</Table.Row>
+													);
+												})}
+											</Table.Body>
+										</Table.Root>
+									</Table.ScrollArea>
+								</Stack>
+							) : null}
+
 							<HStack gap={3} align="flex-start">
 								<Field.Root required={!isEdit} flex="1">
 									<Field.Label>Valor original</Field.Label>
@@ -324,6 +555,78 @@ export function FinancialEntryFormDialog({
 									</Field.Root>
 								)}
 							</HStack>
+
+							{showParcelamento ? (
+								<Field.Root>
+									<Field.Label>Como aplicar o valor</Field.Label>
+									<RadioGroup.Root
+										value={form.parcelamentoModo}
+										onValueChange={(e) => {
+											const value = e.value;
+											if (value !== "dividir" && value !== "repetir") return;
+											setForm((f) => ({ ...f, parcelamentoModo: value }));
+										}}
+									>
+										<Stack gap={2}>
+											<RadioGroup.Item value="dividir">
+												<HStack gap={2}>
+													<RadioGroup.ItemHiddenInput />
+													<RadioGroup.ItemIndicator />
+													<RadioGroup.ItemText>
+														Dividir valor entre as parcelas
+													</RadioGroup.ItemText>
+												</HStack>
+											</RadioGroup.Item>
+											<RadioGroup.Item value="repetir">
+												<HStack gap={2}>
+													<RadioGroup.ItemHiddenInput />
+													<RadioGroup.ItemIndicator />
+													<RadioGroup.ItemText>
+														Repetir o mesmo valor em cada parcela
+													</RadioGroup.ItemText>
+												</HStack>
+											</RadioGroup.Item>
+										</Stack>
+									</RadioGroup.Root>
+								</Field.Root>
+							) : null}
+
+							{previewRows.length > 0 ? (
+								<Stack gap={2}>
+									<Text fontWeight="medium">Preview das parcelas</Text>
+									<Table.ScrollArea maxH="180px">
+										<Table.Root size="sm">
+											<Table.Header>
+												<Table.Row>
+													<Table.ColumnHeader>Nº</Table.ColumnHeader>
+													<Table.ColumnHeader>Vencimento</Table.ColumnHeader>
+													<Table.ColumnHeader textAlign="end">
+														Valor
+													</Table.ColumnHeader>
+												</Table.Row>
+											</Table.Header>
+											<Table.Body>
+												{previewRows.map((row) => (
+													<Table.Row key={row.numero}>
+														<Table.Cell>
+															{`${row.numero}/${parcelasCount}`}
+														</Table.Cell>
+														<Table.Cell>
+															{formatDate(row.vencimento)}
+														</Table.Cell>
+														<Table.Cell textAlign="end">
+															{formatMoney(row.valor)}
+														</Table.Cell>
+													</Table.Row>
+												))}
+											</Table.Body>
+										</Table.Root>
+									</Table.ScrollArea>
+									<Text fontSize="sm" color="fg.muted">
+										Total do grupo: {formatMoney(previewTotal)}
+									</Text>
+								</Stack>
+							) : null}
 
 							<HStack gap={3} align="flex-start">
 								<Field.Root required flex="1">
@@ -517,8 +820,8 @@ export function FinancialEntryFormDialog({
 								</Field.Root>
 							</HStack>
 
-							<HStack gap={3} align="flex-start">
-								<Field.Root flex="1">
+							<HStack gap={3} align="flex-start" flexWrap="wrap">
+								<Field.Root flex="1" minW="140px">
 									<Field.Label>Documento</Field.Label>
 									<Input
 										value={form.documento}
@@ -530,7 +833,7 @@ export function FinancialEntryFormDialog({
 										}
 									/>
 								</Field.Root>
-								<Field.Root flex="1">
+								<Field.Root flex="1" minW="140px">
 									<Field.Label>Número</Field.Label>
 									<Input
 										value={form.numero}

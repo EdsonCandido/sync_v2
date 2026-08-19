@@ -247,6 +247,7 @@ export type FinancialEntryInput = {
 	dataVencimento: string;
 	observacoes?: string | null;
 	parcelas?: number;
+	parcelamentoModo?: "dividir" | "repetir";
 };
 
 function qs(params: Record<string, string | number | undefined>) {
@@ -449,6 +450,12 @@ export const financeiroApi = {
 		),
 	getLancamento: (id: string) =>
 		apiFetch<FinancialEntry>(`/api/financeiro/lancamentos/${id}`),
+	findLancamento: (id: string) =>
+		apiFetch<FinancialEntry>(`/api/financeiro/lancamentos/${id}`),
+	listLancamentosGrupo: (groupId: string) =>
+		apiFetch<{ items: FinancialEntry[] }>(
+			`/api/financeiro/lancamentos/grupo/${groupId}`,
+		),
 	createLancamento: (body: FinancialEntryInput) =>
 		apiFetch<FinancialEntry | { items: FinancialEntry[] }>(
 			"/api/financeiro/lancamentos",
@@ -530,6 +537,15 @@ export function formatMoney(value: number) {
 }
 
 export function formatDate(value: string | Date) {
+	if (typeof value === "string") {
+		const dateOnly = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+		if (dateOnly) {
+			const year = Number(dateOnly[1]);
+			const month = Number(dateOnly[2]);
+			const day = Number(dateOnly[3]);
+			return new Date(year, month - 1, day).toLocaleDateString("pt-BR");
+		}
+	}
 	const d = typeof value === "string" ? new Date(value) : value;
 	return d.toLocaleDateString("pt-BR");
 }

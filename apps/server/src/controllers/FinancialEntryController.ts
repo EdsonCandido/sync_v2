@@ -15,6 +15,7 @@ import {
 } from "../services/FinancialEntryAttachmentServices";
 import { FindFinancialEntryService } from "../services/FindFinancialEntryService";
 import { ListFinancialEntriesService } from "../services/ListFinancialEntriesService";
+import { ListFinancialEntryGroupService } from "../services/ListFinancialEntryGroupService";
 import { RenegotiateFinancialEntryService } from "../services/RenegotiateFinancialEntryService";
 import { ReverseFinancialEntryPaymentService } from "../services/ReverseFinancialEntryPaymentService";
 import { SettleFinancialEntryService } from "../services/SettleFinancialEntryService";
@@ -30,6 +31,7 @@ import {
 export class FinancialEntryController {
 	constructor(
 		private readonly listService = new ListFinancialEntriesService(),
+		private readonly listGroupService = new ListFinancialEntryGroupService(),
 		private readonly findService = new FindFinancialEntryService(),
 		private readonly createService = new CreateFinancialEntryService(),
 		private readonly updateService = new UpdateFinancialEntryService(),
@@ -48,6 +50,20 @@ export class FinancialEntryController {
 			const companyId = requireCompanyId(req);
 			const query = listFinancialEntriesQuerySchema.parse(req.query);
 			res.json(await this.listService.execute(query, companyId));
+		} catch (error) {
+			handleFinanceiroError(res, error);
+		}
+	};
+
+	listGroup = async (req: Request, res: Response) => {
+		try {
+			const companyId = requireCompanyId(req);
+			res.json(
+				await this.listGroupService.execute(
+					String(req.params.groupId),
+					companyId,
+				),
+			);
 		} catch (error) {
 			handleFinanceiroError(res, error);
 		}

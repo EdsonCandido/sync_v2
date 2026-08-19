@@ -12,6 +12,7 @@ import {
 } from "@sync_v2/db/schema/financeiro";
 import {
 	and,
+	asc,
 	count,
 	desc,
 	eq,
@@ -384,6 +385,42 @@ export class FinancialEntryRepository {
 			valorAberto: 0,
 			updatedBy: updatedBy ?? null,
 		});
+	}
+
+	async listByGroup(companyId: string, groupId: string) {
+		const rows = await db
+			.select({
+				entry: financialEntries,
+				clientName: clients.name,
+				supplierName: suppliers.name,
+				categoryName: financialCategories.name,
+				costCenterName: costCenters.name,
+			})
+			.from(financialEntries)
+			.leftJoin(clients, eq(financialEntries.clientId, clients.id))
+			.leftJoin(suppliers, eq(financialEntries.supplierId, suppliers.id))
+			.leftJoin(
+				financialCategories,
+				eq(financialEntries.categoryId, financialCategories.id),
+			)
+			.leftJoin(costCenters, eq(financialEntries.costCenterId, costCenters.id))
+			.where(
+				and(
+					eq(financialEntries.companyId, companyId),
+					eq(financialEntries.installmentGroupId, groupId),
+					eq(financialEntries.ativo, true),
+				),
+			)
+			.orderBy(asc(financialEntries.installmentNumber));
+		const today = startOfDay(new Date());
+		return rows.map((row) => ({
+			...row.entry,
+			status: deriveStatus(row.entry.status, row.entry.dataVencimento, today),
+			clientName: row.clientName,
+			supplierName: row.supplierName,
+			categoryName: row.categoryName,
+			costCenterName: row.costCenterName,
+		}));
 	}
 
 	async listOpenByGroup(companyId: string, groupId: string) {
