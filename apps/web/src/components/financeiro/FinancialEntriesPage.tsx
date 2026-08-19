@@ -13,6 +13,7 @@ import {
 	Text,
 } from "@chakra-ui/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { LuSearch } from "react-icons/lu";
 import { useNavigate, useSearchParams } from "react-router";
 
 import { useModuleAccess } from "@/components/dashboard/ModuleAccessProvider";
@@ -346,13 +347,15 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 					/>
 				</Field.Root>
 				<Button
-					variant="outline"
+					colorPalette="helios"
+					variant="subtle"
 					onClick={() => {
 						setPage(1);
 						setFrom(fromDraft);
 						setTo(toDraft);
 					}}
 				>
+					<LuSearch />
 					Pesquisar
 				</Button>
 				{allowEdit && (
