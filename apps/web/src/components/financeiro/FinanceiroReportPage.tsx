@@ -15,7 +15,7 @@ import {
 	Text,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { LuCircleDollarSign, LuDownload } from "react-icons/lu";
+import { LuCircleDollarSign, LuDownload, LuSearch } from "react-icons/lu";
 import {
 	CartesianGrid,
 	Legend,
@@ -222,12 +222,14 @@ export function FinanceiroReportPage({ slug }: Props) {
 					/>
 				</Field.Root>
 				<Button
-					variant="outline"
+					colorPalette="helios"
+					variant="subtle"
 					onClick={() => {
 						setFrom(fromDraft);
 						setTo(toDraft);
 					}}
 				>
+					<LuSearch />
 					Pesquisar
 				</Button>
 				{needsBank ? (
