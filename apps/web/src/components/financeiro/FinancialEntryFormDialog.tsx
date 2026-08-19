@@ -40,7 +40,7 @@ type FinancialEntryFormDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	kind: "receber" | "pagar";
-	mode?: "create" | "edit";
+	mode?: "create" | "edit" | "view";
 	entry?: FinancialEntry | null;
 	defaults?: FinancialEntryFormDefaults;
 	onCreated?: () => void;
@@ -180,6 +180,8 @@ export function FinancialEntryFormDialog({
 }: FinancialEntryFormDialogProps) {
 	const [activeEntryId, setActiveEntryId] = useState<string | null>(null);
 	const [activeEntry, setActiveEntry] = useState<FinancialEntry | null>(null);
+	const isReadOnly = mode === "view";
+	const isLoadedMode = mode === "edit" || mode === "view";
 	const isEdit = mode === "edit" && !!(activeEntry ?? entry);
 	const currentEntry = activeEntry ?? entry;
 	const [form, setForm] = useState<FormState>(() => buildEmptyForm(defaults));
@@ -199,15 +201,15 @@ export function FinancialEntryFormDialog({
 			setGroupItems([]);
 			return;
 		}
-		if (mode === "edit" && entry?.id) {
+		if (isLoadedMode && entry?.id) {
 			setActiveEntryId(entry.id);
 		} else {
 			setActiveEntryId(null);
 		}
-	}, [open, mode, entry?.id]);
+	}, [open, isLoadedMode, entry?.id]);
 
 	useEffect(() => {
-		if (!open || mode !== "edit" || !activeEntryId) return;
+		if (!open || !isLoadedMode || !activeEntryId) return;
 		let cancelled = false;
 		setSwitching(true);
 		void (async () => {
@@ -220,9 +222,7 @@ export function FinancialEntryFormDialog({
 				if (cancelled) return;
 				toaster.create({
 					title:
-						error instanceof ApiError
-							? error.message
-							: "Erro ao abrir parcela",
+						error instanceof ApiError ? error.message : "Erro ao abrir parcela",
 					type: "error",
 				});
 			} finally {
@@ -232,10 +232,10 @@ export function FinancialEntryFormDialog({
 		return () => {
 			cancelled = true;
 		};
-	}, [open, mode, activeEntryId]);
+	}, [open, isLoadedMode, activeEntryId]);
 
 	useEffect(() => {
-		if (!open || mode === "edit") return;
+		if (!open || mode !== "create") return;
 		setForm(
 			buildEmptyForm({
 				kanbanCardId: defaults?.kanbanCardId,
@@ -289,7 +289,7 @@ export function FinancialEntryFormDialog({
 	}, [open, kind]);
 
 	useEffect(() => {
-		if (!open || mode !== "edit" || !currentEntry?.installmentGroupId) {
+		if (!open || !isLoadedMode || !currentEntry?.installmentGroupId) {
 			setGroupItems([]);
 			return;
 		}
@@ -314,10 +314,10 @@ export function FinancialEntryFormDialog({
 		return () => {
 			cancelled = true;
 		};
-	}, [open, mode, currentEntry?.installmentGroupId]);
+	}, [open, isLoadedMode, currentEntry?.installmentGroupId]);
 
 	const parcelasCount = Math.max(1, Number(form.parcelas) || 1);
-	const showParcelamento = !isEdit && parcelasCount > 1;
+	const showParcelamento = mode === "create" && parcelasCount > 1;
 	const previewRows = useMemo(() => {
 		if (!showParcelamento) return [];
 		const valor = parseMoneyInput(form.valorOriginal);
@@ -349,7 +349,8 @@ export function FinancialEntryFormDialog({
 	async function switchToEntry(next: FinancialEntry) {
 		if (!currentEntry || next.id === currentEntry.id) return;
 		if (next.id === activeEntryId) return;
-		const dirty = !formsEqual(form, buildFormFromEntry(currentEntry));
+		const dirty =
+			!isReadOnly && !formsEqual(form, buildFormFromEntry(currentEntry));
 		if (
 			dirty &&
 			!window.confirm(
@@ -362,6 +363,7 @@ export function FinancialEntryFormDialog({
 	}
 
 	async function handleSave() {
+		if (isReadOnly) return;
 		if (!form.dataEmissao || !form.dataVencimento) {
 			toaster.create({ title: "Datas obrigatórias", type: "error" });
 			return;
@@ -460,16 +462,28 @@ export function FinancialEntryFormDialog({
 		}
 	}
 
-	const title = isEdit
+	const title = isReadOnly
 		? kind === "receber"
-			? "Editar conta a receber"
-			: "Editar conta a pagar"
-		: kind === "receber"
-			? "Nova conta a receber"
-			: "Nova conta a pagar";
+			? "Detalhes da conta a receber"
+			: "Detalhes da conta a pagar"
+		: isEdit
+			? kind === "receber"
+				? "Editar conta a receber"
+				: "Editar conta a pagar"
+			: kind === "receber"
+				? "Nova conta a receber"
+				: "Nova conta a pagar";
 
-	const showOriginFields = isEdit || defaults?.originType !== "kanban";
-	const showGroup = isEdit && groupItems.length > 1;
+	const showOriginFields =
+		isEdit || isReadOnly || defaults?.originType !== "kanban";
+	const showGroup = (isEdit || isReadOnly) && groupItems.length > 1;
+	const payments = currentEntry?.payments?.filter((p) => !p.estornado) ?? [];
+
+	function bankLabel(id: string | null) {
+		if (!id) return "—";
+		const bank = bancos.find((b) => b.id === id);
+		return bank ? `${bank.banco} — ${bank.conta}` : "—";
+	}
 
 	return (
 		<Dialog.Root open={open} onOpenChange={(e) => onOpenChange(e.open)}>
@@ -529,19 +543,45 @@ export function FinancialEntryFormDialog({
 								</Stack>
 							) : null}
 
+							{isReadOnly && currentEntry ? (
+								<Stack gap={1}>
+									<Text fontSize="sm">
+										Status: {STATUS_LABEL[currentEntry.status]}
+									</Text>
+									<HStack gap={4} flexWrap="wrap">
+										<Text fontSize="sm">
+											Pago: {formatMoney(currentEntry.valorPago)}
+										</Text>
+										<Text fontSize="sm">
+											Aberto: {formatMoney(currentEntry.valorAberto)}
+										</Text>
+										<Text fontSize="sm">
+											Liquidação:{" "}
+											{currentEntry.dataLiquidacao
+												? formatDate(currentEntry.dataLiquidacao)
+												: "—"}
+										</Text>
+									</HStack>
+								</Stack>
+							) : null}
+
 							<HStack gap={3} align="flex-start">
-								<Field.Root required={!isEdit} flex="1">
+								<Field.Root
+									required={!isEdit && !isReadOnly}
+									flex="1"
+									disabled={isReadOnly}
+								>
 									<Field.Label>Valor original</Field.Label>
 									<MoneyInput
 										placeholder="R$ 0,00"
 										value={form.valorOriginal}
-										disabled={isEdit}
+										disabled={isEdit || isReadOnly}
 										onChange={(valorOriginal) =>
 											setForm((f) => ({ ...f, valorOriginal }))
 										}
 									/>
 								</Field.Root>
-								{!isEdit && (
+								{!isEdit && !isReadOnly && (
 									<Field.Root flex="1">
 										<Field.Label>Parcelas</Field.Label>
 										<Input
@@ -629,11 +669,12 @@ export function FinancialEntryFormDialog({
 							) : null}
 
 							<HStack gap={3} align="flex-start">
-								<Field.Root required flex="1">
+								<Field.Root required flex="1" disabled={isReadOnly}>
 									<Field.Label>Data de emissão</Field.Label>
 									<Input
 										type="date"
 										value={form.dataEmissao}
+										readOnly={isReadOnly}
 										onChange={(e) =>
 											setForm((f) => ({
 												...f,
@@ -642,11 +683,12 @@ export function FinancialEntryFormDialog({
 										}
 									/>
 								</Field.Root>
-								<Field.Root required flex="1">
+								<Field.Root required flex="1" disabled={isReadOnly}>
 									<Field.Label>Data de vencimento</Field.Label>
 									<Input
 										type="date"
 										value={form.dataVencimento}
+										readOnly={isReadOnly}
 										onChange={(e) =>
 											setForm((f) => ({
 												...f,
@@ -658,11 +700,12 @@ export function FinancialEntryFormDialog({
 							</HStack>
 
 							{showOriginFields &&
-								(isEdit ? (
-									<Field.Root>
+								(isEdit || isReadOnly ? (
+									<Field.Root disabled={isReadOnly}>
 										<Field.Label>Rótulo da origem</Field.Label>
 										<Input
 											value={form.originLabel}
+											readOnly={isReadOnly}
 											onChange={(e) =>
 												setForm((f) => ({
 													...f,
@@ -706,11 +749,12 @@ export function FinancialEntryFormDialog({
 								))}
 
 							{kind === "receber" ? (
-								<Field.Root>
+								<Field.Root disabled={isReadOnly}>
 									<Field.Label>Cliente</Field.Label>
-									<NativeSelect.Root>
+									<NativeSelect.Root disabled={isReadOnly}>
 										<NativeSelect.Field
 											value={form.clientId}
+											disabled={isReadOnly}
 											onChange={(e) =>
 												setForm((f) => ({
 													...f,
@@ -730,11 +774,12 @@ export function FinancialEntryFormDialog({
 									</NativeSelect.Root>
 								</Field.Root>
 							) : (
-								<Field.Root>
+								<Field.Root disabled={isReadOnly}>
 									<Field.Label>Fornecedor</Field.Label>
-									<NativeSelect.Root>
+									<NativeSelect.Root disabled={isReadOnly}>
 										<NativeSelect.Field
 											value={form.supplierId}
+											disabled={isReadOnly}
 											onChange={(e) =>
 												setForm((f) => ({
 													...f,
@@ -753,11 +798,12 @@ export function FinancialEntryFormDialog({
 								</Field.Root>
 							)}
 
-							<Field.Root>
+							<Field.Root disabled={isReadOnly}>
 								<Field.Label>Categoria</Field.Label>
-								<NativeSelect.Root>
+								<NativeSelect.Root disabled={isReadOnly}>
 									<NativeSelect.Field
 										value={form.categoryId}
+										disabled={isReadOnly}
 										onChange={(e) =>
 											setForm((f) => ({
 												...f,
@@ -776,11 +822,12 @@ export function FinancialEntryFormDialog({
 							</Field.Root>
 
 							<HStack gap={3} align="flex-start">
-								<Field.Root flex="1">
+								<Field.Root flex="1" disabled={isReadOnly}>
 									<Field.Label>Centro de custo</Field.Label>
-									<NativeSelect.Root>
+									<NativeSelect.Root disabled={isReadOnly}>
 										<NativeSelect.Field
 											value={form.costCenterId}
+											disabled={isReadOnly}
 											onChange={(e) =>
 												setForm((f) => ({
 													...f,
@@ -797,11 +844,12 @@ export function FinancialEntryFormDialog({
 										</NativeSelect.Field>
 									</NativeSelect.Root>
 								</Field.Root>
-								<Field.Root flex="1">
+								<Field.Root flex="1" disabled={isReadOnly}>
 									<Field.Label>Conta bancária</Field.Label>
-									<NativeSelect.Root>
+									<NativeSelect.Root disabled={isReadOnly}>
 										<NativeSelect.Field
 											value={form.bankAccountId}
+											disabled={isReadOnly}
 											onChange={(e) =>
 												setForm((f) => ({
 													...f,
@@ -821,10 +869,11 @@ export function FinancialEntryFormDialog({
 							</HStack>
 
 							<HStack gap={3} align="flex-start" flexWrap="wrap">
-								<Field.Root flex="1" minW="140px">
+								<Field.Root flex="1" minW="140px" disabled={isReadOnly}>
 									<Field.Label>Documento</Field.Label>
 									<Input
 										value={form.documento}
+										readOnly={isReadOnly}
 										onChange={(e) =>
 											setForm((f) => ({
 												...f,
@@ -833,10 +882,11 @@ export function FinancialEntryFormDialog({
 										}
 									/>
 								</Field.Root>
-								<Field.Root flex="1" minW="140px">
+								<Field.Root flex="1" minW="140px" disabled={isReadOnly}>
 									<Field.Label>Número</Field.Label>
 									<Input
 										value={form.numero}
+										readOnly={isReadOnly}
 										onChange={(e) =>
 											setForm((f) => ({ ...f, numero: e.target.value }))
 										}
@@ -844,10 +894,11 @@ export function FinancialEntryFormDialog({
 								</Field.Root>
 							</HStack>
 
-							<Field.Root>
+							<Field.Root disabled={isReadOnly}>
 								<Field.Label>Observações</Field.Label>
 								<Textarea
 									value={form.observacoes}
+									readOnly={isReadOnly}
 									onChange={(e) =>
 										setForm((f) => ({
 											...f,
@@ -857,20 +908,66 @@ export function FinancialEntryFormDialog({
 									rows={3}
 								/>
 							</Field.Root>
+
+							{isReadOnly ? (
+								<Stack gap={2}>
+									<Text fontWeight="medium">Pagamentos</Text>
+									{payments.length === 0 ? (
+										<Text fontSize="sm" color="fg.muted">
+											Nenhum pagamento registrado
+										</Text>
+									) : (
+										<Table.ScrollArea maxH="200px">
+											<Table.Root size="sm">
+												<Table.Header>
+													<Table.Row>
+														<Table.ColumnHeader>Data</Table.ColumnHeader>
+														<Table.ColumnHeader textAlign="end">
+															Valor
+														</Table.ColumnHeader>
+														<Table.ColumnHeader hideBelow="md">
+															Conta
+														</Table.ColumnHeader>
+													</Table.Row>
+												</Table.Header>
+												<Table.Body>
+													{payments.map((payment) => (
+														<Table.Row key={payment.id}>
+															<Table.Cell>
+																{formatDate(payment.dataPagamento)}
+															</Table.Cell>
+															<Table.Cell textAlign="end">
+																{formatMoney(payment.valor)}
+															</Table.Cell>
+															<Table.Cell hideBelow="md">
+																{bankLabel(payment.bankAccountId)}
+															</Table.Cell>
+														</Table.Row>
+													))}
+												</Table.Body>
+											</Table.Root>
+										</Table.ScrollArea>
+									)}
+								</Stack>
+							) : null}
 						</Stack>
 					</Dialog.Body>
 					<Dialog.Footer>
 						<Dialog.ActionTrigger asChild>
-							<Button variant="outline">Cancelar</Button>
+							<Button variant="outline">
+								{isReadOnly ? "Fechar" : "Cancelar"}
+							</Button>
 						</Dialog.ActionTrigger>
-						<Button
-							bg="helios.solid"
-							color="helios.contrast"
-							loading={saving}
-							onClick={() => void handleSave()}
-						>
-							Salvar
-						</Button>
+						{isReadOnly ? null : (
+							<Button
+								bg="helios.solid"
+								color="helios.contrast"
+								loading={saving}
+								onClick={() => void handleSave()}
+							>
+								Salvar
+							</Button>
+						)}
 					</Dialog.Footer>
 				</Dialog.Content>
 			</Dialog.Positioner>
