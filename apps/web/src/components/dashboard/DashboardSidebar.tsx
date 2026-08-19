@@ -2,6 +2,7 @@ import { Box, Button, Flex, Icon, Stack, Text } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { NavLink } from "react-router";
 
+import { AppVersionLabel } from "@/components/AppVersionLabel";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { authClient } from "@/lib/auth-client";
 
@@ -117,6 +118,9 @@ export function DashboardSidebar({ onNavigate }: DashboardSidebarProps) {
 				<Text fontSize="xs" color="fg.muted" lineHeight="tall">
 					Tecnologia que ilumina resultados.
 				</Text>
+				<Box mt={2}>
+					<AppVersionLabel />
+				</Box>
 			</Box>
 		</Flex>
 	);

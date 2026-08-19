@@ -1,6 +1,7 @@
 import { Box, Flex, HStack, Separator } from "@chakra-ui/react";
 import { NavLink } from "react-router";
 
+import { AppVersionLabel } from "./AppVersionLabel";
 import { BrandMark } from "./ui/BrandMark";
 import { ColorModeButton } from "./ui/color-mode";
 import UserMenu from "./user-menu";
@@ -52,6 +53,7 @@ export default function Header() {
 					))}
 				</HStack>
 				<HStack gap={2}>
+					<AppVersionLabel />
 					<ColorModeButton />
 					<UserMenu />
 				</HStack>

@@ -79,13 +79,13 @@ docker compose restart server
 
 ## Deploy recorrente
 
+Na raiz do clone (`/opt/sync_v2`):
+
 ```bash
-cd /opt/sync_v2
-git pull
-docker compose up -d --build
-# se o schema mudou:
-docker compose exec server sh -c 'cd /app/packages/db && npm run db:push'
+./deploy.sh
 ```
+
+O script faz `git pull`, define `VITE_APP_VERSION` com o SHA curto do Git, `docker compose up -d --build` e `db:push`. O SHA entra no build do `web` (`.git` não vai para a imagem).
 
 ## Seed
 
@@ -118,7 +118,7 @@ Postgres **não** fica exposto na internet — bind em `127.0.0.1`.
 
 Envs: `.env` na raiz + `apps/server/.env` + `apps/web/.env`.
 
-`VITE_*` é bake no build do web — mudou a URL da API? Rebuild do `web`.
+`VITE_*` é bake no build do web — mudou a URL da API? Rebuild do `web`. `VITE_APP_VERSION` vem do `./deploy.sh` (SHA do Git).
 
 ## Desenvolvimento local
 

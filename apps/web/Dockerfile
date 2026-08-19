@@ -6,9 +6,13 @@ COPY . .
 RUN --mount=type=cache,target=/root/.npm npm install
 
 ARG VITE_SERVER_URL
+ARG VITE_APP_VERSION
 ENV VITE_SERVER_URL=${VITE_SERVER_URL}
 ENV NODE_ENV=production
-RUN cd apps/web && npm run build
+RUN VITE_APP_VERSION="${VITE_APP_VERSION:-$(date -u +%Y%m%d%H%M%S)}" \
+	&& export VITE_APP_VERSION \
+	&& echo "VITE_APP_VERSION=${VITE_APP_VERSION}" \
+	&& cd apps/web && npm run build
 
 # Produção: react-router-serve aplica compression() (gzip) em HTML/JS/CSS/JSON.
 # Imagens (PNG/WebP/JPEG) já são comprimidas — middleware pula image/* (correto).
