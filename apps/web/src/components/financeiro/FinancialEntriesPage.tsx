@@ -415,6 +415,7 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 								const canBaixar =
 									item.status !== "pago" && item.status !== "cancelado";
 								const canEditEntry = canBaixar;
+								const isPago = item.status === "pago";
 								const canCancel =
 									item.valorPago === 0 && item.status !== "cancelado";
 
@@ -445,41 +446,53 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 											</Badge>
 										</Table.Cell>
 										<Table.Cell textAlign="end">
-											{allowEdit && (
-												<HStack gap={1} justify="flex-end" flexWrap="wrap">
-													{canEditEntry && (
-														<Button
-															size="xs"
-															variant="ghost"
-															onClick={() => {
-																setEditingEntry(item);
-																setFormOpen(true);
-															}}
-														>
-															Editar
-														</Button>
-													)}
-													{canBaixar && (
-														<Button
-															size="xs"
-															variant="ghost"
-															onClick={() => void openBaixar(item)}
-														>
-															Baixar
-														</Button>
-													)}
-													{canCancel && (
-														<Button
-															size="xs"
-															variant="ghost"
-															onClick={() => {
-																setSelected(item);
-																setCancelOpen(true);
-															}}
-														>
-															Cancelar
-														</Button>
-													)}
+											<HStack gap={1} justify="flex-end" flexWrap="wrap">
+												{isPago ? (
+													<Button
+														size="xs"
+														variant="ghost"
+														onClick={() => {
+															setEditingEntry(item);
+															setFormOpen(true);
+														}}
+													>
+														Ver
+													</Button>
+												) : null}
+												{allowEdit && canEditEntry ? (
+													<Button
+														size="xs"
+														variant="ghost"
+														onClick={() => {
+															setEditingEntry(item);
+															setFormOpen(true);
+														}}
+													>
+														Editar
+													</Button>
+												) : null}
+												{allowEdit && canBaixar ? (
+													<Button
+														size="xs"
+														variant="ghost"
+														onClick={() => void openBaixar(item)}
+													>
+														Baixar
+													</Button>
+												) : null}
+												{allowEdit && canCancel ? (
+													<Button
+														size="xs"
+														variant="ghost"
+														onClick={() => {
+															setSelected(item);
+															setCancelOpen(true);
+														}}
+													>
+														Cancelar
+													</Button>
+												) : null}
+												{allowEdit ? (
 													<Button
 														size="xs"
 														variant="ghost"
@@ -491,8 +504,8 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 													>
 														Excluir
 													</Button>
-												</HStack>
-											)}
+												) : null}
+											</HStack>
 										</Table.Cell>
 									</Table.Row>
 								);
@@ -533,7 +546,13 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 					if (!open) setEditingEntry(null);
 				}}
 				kind={kind}
-				mode={editingEntry ? "edit" : "create"}
+				mode={
+					editingEntry
+						? editingEntry.status === "pago"
+							? "view"
+							: "edit"
+						: "create"
+				}
 				entry={editingEntry}
 				onSaved={() => void load()}
 			/>
