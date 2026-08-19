@@ -11,18 +11,19 @@ export class RecordUserAccessService {
 		userId: string;
 		companyId: string | null | undefined;
 	}) {
-		if (!input.companyId) {
-			return;
-		}
-
 		const now = new Date();
-		await Promise.all([
-			this.accessEventRepository.create({
-				companyId: input.companyId,
-				userId: input.userId,
-				accessedAt: now,
-			}),
+		const tasks: Promise<unknown>[] = [
 			this.userRepository.updateLastAccess(input.userId, now),
-		]);
+		];
+		if (input.companyId) {
+			tasks.push(
+				this.accessEventRepository.create({
+					companyId: input.companyId,
+					userId: input.userId,
+					accessedAt: now,
+				}),
+			);
+		}
+		await Promise.all(tasks);
 	}
 }

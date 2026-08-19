@@ -8,6 +8,7 @@ export * from "./dashboard-widgets";
 export * from "./financeiro";
 export * from "./itr";
 export * from "./kanban";
+export * from "./login-access-logs";
 export * from "./module-permissions";
 export * from "./notifications";
 export * from "./plans";

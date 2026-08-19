@@ -1718,3 +1718,63 @@ export const dashboardWidgetsResponseSchema = z.object({
 export type DashboardWidgetsResponse = z.infer<
 	typeof dashboardWidgetsResponseSchema
 >;
+
+export const listLoginAccessHistoryQuerySchema = z.object({
+	q: z.string().optional(),
+	page: z.coerce.number().int().min(1).default(1),
+	pageSize: z.coerce.number().int().min(1).max(100).default(10),
+});
+
+export type ListLoginAccessHistoryQuery = z.infer<
+	typeof listLoginAccessHistoryQuerySchema
+>;
+
+export const accessMonitorLocationSchema = z.object({
+	id: z.string().uuid(),
+	userId: z.string().uuid(),
+	userName: z.string(),
+	userEmail: z.string(),
+	perfil: userPerfilSchema,
+	companyId: z.string().uuid().nullable(),
+	companyName: z.string().nullable(),
+	ipAddress: z.string().nullable(),
+	userAgent: z.string().nullable(),
+	country: z.string().nullable(),
+	region: z.string().nullable(),
+	city: z.string().nullable(),
+});
+
+export const activeSessionResponseSchema = accessMonitorLocationSchema.extend({
+	expiresAt: z.coerce.date(),
+	createdAt: z.coerce.date(),
+});
+
+export type ActiveSessionResponse = z.infer<typeof activeSessionResponseSchema>;
+
+export const loginAccessHistoryItemSchema = accessMonitorLocationSchema.extend({
+	loggedAt: z.coerce.date(),
+});
+
+export type LoginAccessHistoryItem = z.infer<
+	typeof loginAccessHistoryItemSchema
+>;
+
+export const listActiveSessionsResponseSchema = z.object({
+	items: z.array(activeSessionResponseSchema),
+	total: z.number().int(),
+});
+
+export type ListActiveSessionsResponse = z.infer<
+	typeof listActiveSessionsResponseSchema
+>;
+
+export const listLoginAccessHistoryResponseSchema = z.object({
+	items: z.array(loginAccessHistoryItemSchema),
+	total: z.number().int(),
+	page: z.number().int(),
+	pageSize: z.number().int(),
+});
+
+export type ListLoginAccessHistoryResponse = z.infer<
+	typeof listLoginAccessHistoryResponseSchema
+>;

@@ -11,6 +11,7 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { AppVersionWatcher } from "./components/AppVersionWatcher";
 import Header from "./components/header";
 import { Provider } from "./components/ui/provider";
 import { Toaster } from "./components/ui/toaster";
@@ -100,6 +101,7 @@ export default function App() {
 	return (
 		<>
 			<GoogleAnalyticsPageview />
+			<AppVersionWatcher />
 			{isDashboard ? (
 				<>
 					<Outlet />

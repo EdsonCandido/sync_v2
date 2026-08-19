@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { accessMonitorRoutes } from "./access-monitor.routes";
 import { agendamentosRoutes } from "./agendamentos.routes";
 import { cepRoutes } from "./cep.routes";
 import { clientRoutes } from "./client.routes";
@@ -19,6 +20,7 @@ export function registerRoutes(app: Express) {
 		res.status(200).send("OK");
 	});
 
+	app.use("/api/access-monitor", accessMonitorRoutes);
 	app.use("/api/companies", companyRoutes);
 	app.use("/api/company-dashboard", companyDashboardRoutes);
 	app.use("/api/clients", clientRoutes);
