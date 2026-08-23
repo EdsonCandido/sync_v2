@@ -3,8 +3,7 @@ import { z } from "zod";
 export const createPlanSchema = z.object({
 	name: z.string().min(1),
 	description: z.string().optional().nullable(),
-	startDate: z.coerce.date(),
-	endDate: z.coerce.date(),
+	durationDays: z.number().int().min(1),
 });
 
 export type CreatePlanInput = z.infer<typeof createPlanSchema>;
@@ -25,8 +24,7 @@ export const planResponseSchema = z.object({
 	id: z.string().uuid(),
 	name: z.string(),
 	description: z.string().nullable(),
-	startDate: z.coerce.date(),
-	endDate: z.coerce.date(),
+	durationDays: z.number().int().min(1),
 	ativo: z.boolean(),
 	createdAt: z.coerce.date(),
 	updatedAt: z.coerce.date(),
@@ -52,7 +50,6 @@ export const createCompanySchema = z.object({
 	latitude: z.number().optional().nullable(),
 	longitude: z.number().optional().nullable(),
 	planId: z.string().uuid(),
-	planExpiresAt: z.coerce.date().optional(),
 });
 
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
@@ -89,6 +86,7 @@ export const companyResponseSchema = z.object({
 	longitude: z.number().nullable(),
 	planId: z.string().uuid(),
 	planExpiresAt: z.coerce.date(),
+	remainingDays: z.number().int(),
 	ativo: z.boolean(),
 	createdAt: z.coerce.date(),
 	updatedAt: z.coerce.date(),

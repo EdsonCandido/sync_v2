@@ -89,14 +89,12 @@ async function ensurePlanBasico() {
 		.limit(1);
 
 	if (existing) {
-		const endDate = new Date(existing.startDate);
-		endDate.setDate(endDate.getDate() + 365);
 		await db
 			.update(plans)
 			.set({
 				ativo: true,
 				description: "Plano básico com validade de 365 dias",
-				endDate: existing.endDate < new Date() ? endDate : existing.endDate,
+				durationDays: existing.durationDays > 0 ? existing.durationDays : 365,
 				updatedAt: new Date(),
 			})
 			.where(eq(plans.id, existing.id));
@@ -104,17 +102,12 @@ async function ensurePlanBasico() {
 		return existing.id;
 	}
 
-	const startDate = new Date();
-	const endDate = new Date(startDate);
-	endDate.setDate(endDate.getDate() + 365);
-
 	const [created] = await db
 		.insert(plans)
 		.values({
 			name,
 			description: "Plano básico com validade de 365 dias",
-			startDate,
-			endDate,
+			durationDays: 365,
 			ativo: true,
 		})
 		.returning();
@@ -141,8 +134,16 @@ async function ensureHeliosCompany(planId: string) {
 		.where(eq(companies.document, document))
 		.limit(1);
 
+	const [plan] = await db
+		.select()
+		.from(plans)
+		.where(eq(plans.id, planId))
+		.limit(1);
+
+	const durationDays =
+		plan?.durationDays && plan.durationDays > 0 ? plan.durationDays : 365;
 	const planExpiresAt = new Date();
-	planExpiresAt.setDate(planExpiresAt.getDate() + 365);
+	planExpiresAt.setDate(planExpiresAt.getDate() + durationDays);
 
 	const payload = {
 		corporateName: `${name} LTDA`,

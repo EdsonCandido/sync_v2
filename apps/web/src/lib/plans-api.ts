@@ -4,8 +4,7 @@ export type Plan = {
 	id: string;
 	name: string;
 	description: string | null;
-	startDate: string;
-	endDate: string;
+	durationDays: number;
 	ativo: boolean;
 	createdAt?: string;
 	updatedAt?: string;
@@ -14,8 +13,7 @@ export type Plan = {
 export type PlanInput = {
 	name: string;
 	description?: string | null;
-	startDate: string;
-	endDate: string;
+	durationDays: number;
 };
 
 export type PlanListResult = {

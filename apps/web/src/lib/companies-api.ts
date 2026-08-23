@@ -19,6 +19,8 @@ export type Company = {
 	latitude: number | null;
 	longitude: number | null;
 	planId: string;
+	planExpiresAt: string;
+	remainingDays: number;
 	ativo: boolean;
 	createdAt: string;
 	updatedAt: string;
@@ -104,6 +106,10 @@ export const companiesApi = {
 		}),
 	remove: (id: string) =>
 		apiFetch<Company>(`/api/companies/${id}`, { method: "DELETE" }),
+	renewPlan: (id: string) =>
+		apiFetch<Company>(`/api/companies/${id}/renew-plan`, {
+			method: "POST",
+		}),
 	getModules: (companyId: string) =>
 		apiFetch<CompanyModulesResponse>(`/api/companies/${companyId}/modules`),
 	upsertModules: (companyId: string, modules: CompanyModulePermissionItem[]) =>

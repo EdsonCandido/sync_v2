@@ -2,6 +2,7 @@ import type { UpdateCompanyInput } from "@sync_v2/contracts";
 import { CompanyRepository } from "../repositories/CompanyRepository";
 import { PlanRepository } from "../repositories/PlanRepository";
 import { AppError } from "../utils/AppError";
+import { withRemainingDays } from "../utils/planRemainingDays";
 
 export class UpdateCompanyService {
 	constructor(
@@ -15,10 +16,16 @@ export class UpdateCompanyService {
 			throw new AppError(404, "Empresa não encontrada.");
 		}
 
+		let planExpiresAt: Date | undefined;
+
 		if (input.planId) {
 			const plan = await this.planRepository.findById(input.planId);
 			if (!plan || !plan.ativo) {
 				throw new AppError(400, "Plano inválido ou inativo.");
+			}
+			if (input.planId !== existing.planId) {
+				planExpiresAt = new Date();
+				planExpiresAt.setDate(planExpiresAt.getDate() + plan.durationDays);
 			}
 		}
 
@@ -47,9 +54,13 @@ export class UpdateCompanyService {
 		const payload = Object.fromEntries(
 			Object.entries({
 				...input,
+				planExpiresAt,
 				updatedBy: userId,
 			}).filter(([, value]) => value !== undefined),
-		) as UpdateCompanyInput & { updatedBy?: string | null };
+		) as UpdateCompanyInput & {
+			planExpiresAt?: Date;
+			updatedBy?: string | null;
+		};
 
 		const updated = await this.companyRepository.update(id, payload);
 
@@ -57,7 +68,7 @@ export class UpdateCompanyService {
 			throw new AppError(404, "Empresa não encontrada.");
 		}
 
-		return updated;
+		return withRemainingDays(updated);
 	}
 }
 

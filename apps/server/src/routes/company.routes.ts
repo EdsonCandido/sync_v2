@@ -17,6 +17,7 @@ companyRoutes.use(
 companyRoutes.get("/", controller.list);
 companyRoutes.get("/:companyId/modules", moduleController.list);
 companyRoutes.put("/:companyId/modules", moduleController.upsert);
+companyRoutes.post("/:id/renew-plan", controller.renewPlan);
 companyRoutes.get("/:id", controller.find);
 companyRoutes.post("/", controller.create);
 companyRoutes.put("/:id", controller.update);

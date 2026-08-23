@@ -11,12 +11,6 @@ export class UpdatePlanService {
 			throw new AppError(404, "Plano não encontrado.");
 		}
 
-		const startDate = input.startDate ?? existing.startDate;
-		const endDate = input.endDate ?? existing.endDate;
-		if (endDate < startDate) {
-			throw new AppError(400, "Data final deve ser posterior à data inicial.");
-		}
-
 		if (input.name) {
 			const byName = await this.planRepository.findByName(input.name, id);
 			if (byName) {

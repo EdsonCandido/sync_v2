@@ -83,8 +83,7 @@ export class PlanRepository {
 			.values({
 				name: data.name,
 				description: data.description ?? null,
-				startDate: data.startDate,
-				endDate: data.endDate,
+				durationDays: data.durationDays,
 			})
 			.returning();
 		return row;

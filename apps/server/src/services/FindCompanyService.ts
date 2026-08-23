@@ -1,5 +1,6 @@
 import { CompanyRepository } from "../repositories/CompanyRepository";
 import { AppError } from "../utils/AppError";
+import { withRemainingDays } from "../utils/planRemainingDays";
 
 export class FindCompanyService {
 	constructor(private readonly companyRepository = new CompanyRepository()) {}
@@ -9,6 +10,6 @@ export class FindCompanyService {
 		if (!company) {
 			throw new AppError(404, "Empresa não encontrada.");
 		}
-		return company;
+		return withRemainingDays(company);
 	}
 }
