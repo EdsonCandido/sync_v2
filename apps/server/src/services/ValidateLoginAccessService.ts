@@ -52,7 +52,7 @@ export class ValidateLoginAccessService {
 		}
 
 		const now = new Date();
-		if (now > company.planExpiresAt || now > plan.endDate) {
+		if (now > company.planExpiresAt) {
 			return { ok: false, message: "Plano expirado." };
 		}
 

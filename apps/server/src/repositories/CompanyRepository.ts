@@ -148,7 +148,10 @@ export class CompanyRepository {
 
 	async update(
 		id: string,
-		data: UpdateCompanyInput & { updatedBy?: string | null },
+		data: UpdateCompanyInput & {
+			planExpiresAt?: Date;
+			updatedBy?: string | null;
+		},
 	) {
 		const [row] = await db
 			.update(companies)

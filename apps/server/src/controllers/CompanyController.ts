@@ -7,6 +7,7 @@ import type { Request, Response } from "express";
 import { CreateCompanyService } from "../services/CreateCompanyService";
 import { FindCompanyService } from "../services/FindCompanyService";
 import { ListCompaniesService } from "../services/ListCompaniesService";
+import { RenewCompanyPlanService } from "../services/RenewCompanyPlanService";
 import { SoftDeleteCompanyService } from "../services/SoftDeleteCompanyService";
 import { UpdateCompanyService } from "../services/UpdateCompanyService";
 import { AppError } from "../utils/AppError";
@@ -18,6 +19,7 @@ export class CompanyController {
 		private readonly createCompanyService = new CreateCompanyService(),
 		private readonly updateCompanyService = new UpdateCompanyService(),
 		private readonly softDeleteCompanyService = new SoftDeleteCompanyService(),
+		private readonly renewCompanyPlanService = new RenewCompanyPlanService(),
 	) {}
 
 	list = async (req: Request, res: Response) => {
@@ -68,6 +70,17 @@ export class CompanyController {
 			const id = String(req.params.id);
 			const userId = req.authSession!.user.id;
 			const company = await this.softDeleteCompanyService.execute(id, userId);
+			res.json(company);
+		} catch (error) {
+			handleError(res, error);
+		}
+	};
+
+	renewPlan = async (req: Request, res: Response) => {
+		try {
+			const id = String(req.params.id);
+			const userId = req.authSession!.user.id;
+			const company = await this.renewCompanyPlanService.execute(id, userId);
 			res.json(company);
 		} catch (error) {
 			handleError(res, error);

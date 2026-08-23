@@ -18,12 +18,6 @@ import { ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
 import { type Plan, type PlanInput, plansApi } from "@/lib/plans-api";
 
-function formatDate(value: string) {
-	const d = new Date(value);
-	if (Number.isNaN(d.getTime())) return value;
-	return d.toLocaleDateString("pt-BR");
-}
-
 export default function DashboardPlanos() {
 	const navigate = useNavigate();
 	const { data: session, isPending: sessionPending } = authClient.useSession();
@@ -195,8 +189,7 @@ export default function DashboardPlanos() {
 								<Table.ColumnHeader hideBelow="md">
 									Descrição
 								</Table.ColumnHeader>
-								<Table.ColumnHeader>Início</Table.ColumnHeader>
-								<Table.ColumnHeader>Fim</Table.ColumnHeader>
+								<Table.ColumnHeader>Dias</Table.ColumnHeader>
 								<Table.ColumnHeader textAlign="end">Ações</Table.ColumnHeader>
 							</Table.Row>
 						</Table.Header>
@@ -207,8 +200,7 @@ export default function DashboardPlanos() {
 									<Table.Cell hideBelow="md">
 										{plan.description || "—"}
 									</Table.Cell>
-									<Table.Cell>{formatDate(plan.startDate)}</Table.Cell>
-									<Table.Cell>{formatDate(plan.endDate)}</Table.Cell>
+									<Table.Cell>{plan.durationDays}</Table.Cell>
 									<Table.Cell textAlign="end">
 										<HStack gap={1} justify="flex-end">
 											<Button

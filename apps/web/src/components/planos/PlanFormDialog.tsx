@@ -2,7 +2,6 @@ import {
 	Button,
 	Dialog,
 	Field,
-	HStack,
 	Input,
 	Stack,
 	Textarea,
@@ -13,17 +12,11 @@ import z from "zod";
 
 import type { Plan, PlanInput } from "@/lib/plans-api";
 
-const planFormSchema = z
-	.object({
-		name: z.string().min(1, "Obrigatório"),
-		description: z.string().optional(),
-		startDate: z.string().min(1, "Obrigatório"),
-		endDate: z.string().min(1, "Obrigatório"),
-	})
-	.refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
-		message: "Data final deve ser posterior à data inicial",
-		path: ["endDate"],
-	});
+const planFormSchema = z.object({
+	name: z.string().min(1, "Obrigatório"),
+	description: z.string().optional(),
+	durationDays: z.number().int().min(1, "Informe ao menos 1 dia"),
+});
 
 type PlanFormValues = z.infer<typeof planFormSchema>;
 
@@ -35,17 +28,10 @@ type PlanFormDialogProps = {
 	onSubmit: (values: PlanInput) => Promise<void>;
 };
 
-function toDateInput(value: string) {
-	const d = new Date(value);
-	if (Number.isNaN(d.getTime())) return "";
-	return d.toISOString().slice(0, 10);
-}
-
 const emptyValues: PlanFormValues = {
 	name: "",
 	description: "",
-	startDate: "",
-	endDate: "",
+	durationDays: 365,
 };
 
 export function PlanFormDialog({
@@ -64,8 +50,7 @@ export function PlanFormDialog({
 			await onSubmit({
 				name: value.name,
 				description: value.description || null,
-				startDate: value.startDate,
-				endDate: value.endDate,
+				durationDays: value.durationDays,
 			});
 		},
 		validators: {
@@ -79,18 +64,13 @@ export function PlanFormDialog({
 			form.reset({
 				name: plan.name,
 				description: plan.description ?? "",
-				startDate: toDateInput(plan.startDate),
-				endDate: toDateInput(plan.endDate),
+				durationDays: plan.durationDays,
 			});
 		} else {
-			const today = new Date();
-			const end = new Date(today);
-			end.setDate(end.getDate() + 365);
 			form.reset({
 				name: "",
 				description: "",
-				startDate: today.toISOString().slice(0, 10),
-				endDate: end.toISOString().slice(0, 10),
+				durationDays: 365,
 			});
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -164,62 +144,47 @@ export function PlanFormDialog({
 										</Field.Root>
 									)}
 								</form.Field>
-								<HStack
-									align="start"
-									gap={4}
-									flexDir={{ base: "column", md: "row" }}
-								>
-									<form.Field name="startDate">
-										{(field) => (
-											<Field.Root
-												invalid={field.state.meta.errors.length > 0}
-												required
-												flex="1"
-											>
-												<Field.Label>Data início</Field.Label>
-												<Input
-													type="date"
-													value={field.state.value}
-													disabled={readOnly}
-													onChange={(e) => field.handleChange(e.target.value)}
-													onBlur={field.handleBlur}
-												/>
-												<Field.ErrorText>
-													{String(
-														field.state.meta.errors[0]?.message ??
-															field.state.meta.errors[0] ??
-															"",
-													)}
-												</Field.ErrorText>
-											</Field.Root>
-										)}
-									</form.Field>
-									<form.Field name="endDate">
-										{(field) => (
-											<Field.Root
-												invalid={field.state.meta.errors.length > 0}
-												required
-												flex="1"
-											>
-												<Field.Label>Data fim</Field.Label>
-												<Input
-													type="date"
-													value={field.state.value}
-													disabled={readOnly}
-													onChange={(e) => field.handleChange(e.target.value)}
-													onBlur={field.handleBlur}
-												/>
-												<Field.ErrorText>
-													{String(
-														field.state.meta.errors[0]?.message ??
-															field.state.meta.errors[0] ??
-															"",
-													)}
-												</Field.ErrorText>
-											</Field.Root>
-										)}
-									</form.Field>
-								</HStack>
+								<form.Field name="durationDays">
+									{(field) => (
+										<Field.Root
+											invalid={field.state.meta.errors.length > 0}
+											required
+										>
+											<Field.Label>Dias de validade</Field.Label>
+											<Input
+												type="number"
+												min={1}
+												step={1}
+												value={
+													Number.isFinite(field.state.value)
+														? field.state.value
+														: ""
+												}
+												disabled={readOnly}
+												onChange={(e) => {
+													const raw = e.target.value;
+													if (raw === "") {
+														field.handleChange(Number.NaN);
+														return;
+													}
+													field.handleChange(Number(raw));
+												}}
+												onBlur={field.handleBlur}
+											/>
+											<Field.HelperText>
+												Quantidade de dias liberados ao vincular o plano a uma
+												empresa
+											</Field.HelperText>
+											<Field.ErrorText>
+												{String(
+													field.state.meta.errors[0]?.message ??
+														field.state.meta.errors[0] ??
+														"",
+												)}
+											</Field.ErrorText>
+										</Field.Root>
+									)}
+								</form.Field>
 							</Stack>
 						</form>
 					</Dialog.Body>

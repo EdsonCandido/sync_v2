@@ -2,6 +2,7 @@ import type { CreateCompanyInput } from "@sync_v2/contracts";
 import { CompanyRepository } from "../repositories/CompanyRepository";
 import { PlanRepository } from "../repositories/PlanRepository";
 import { AppError } from "../utils/AppError";
+import { withRemainingDays } from "../utils/planRemainingDays";
 import { EnsureItrKanbanBoardService } from "./EnsureItrKanbanBoardService";
 import { SeedCompanyFinanceiroDefaultsService } from "./SeedCompanyFinanceiroDefaultsService";
 
@@ -33,12 +34,15 @@ export class CreateCompanyService {
 			throw new AppError(409, "Email já cadastrado.");
 		}
 
+		const planExpiresAt = new Date();
+		planExpiresAt.setDate(planExpiresAt.getDate() + plan.durationDays);
+
 		const company = await this.companyRepository.create({
 			...input,
 			document: normalizeDocument(input.document),
 			email: input.email.toLowerCase(),
 			state: input.state.toUpperCase(),
-			planExpiresAt: input.planExpiresAt ?? plan.endDate,
+			planExpiresAt,
 			createdBy: userId,
 			updatedBy: userId,
 		});
@@ -54,7 +58,7 @@ export class CreateCompanyService {
 
 		await this.ensureItrBoard.execute(company.id, userId);
 
-		return company;
+		return withRemainingDays(company);
 	}
 }
 

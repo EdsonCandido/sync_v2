@@ -45,6 +45,8 @@ export default function DashboardEmpresas() {
 	);
 	const [selected, setSelected] = useState<Company | null>(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [renewOpen, setRenewOpen] = useState(false);
+	const [renewing, setRenewing] = useState(false);
 	const [modulesOpen, setModulesOpen] = useState(false);
 
 	useEffect(() => {
@@ -134,6 +136,31 @@ export default function DashboardEmpresas() {
 		}
 	}
 
+	async function handleRenew() {
+		if (!selected) return;
+		setRenewing(true);
+		try {
+			await companiesApi.renewPlan(selected.id);
+			toaster.create({ title: "Plano renovado", type: "success" });
+			setRenewOpen(false);
+			setSelected(null);
+			await load();
+		} catch (error) {
+			toaster.create({
+				title: error instanceof ApiError ? error.message : "Erro ao renovar",
+				type: "error",
+			});
+		} finally {
+			setRenewing(false);
+		}
+	}
+
+	function formatRemainingDays(days: number) {
+		if (days <= 0) return "Expirado";
+		if (days === 1) return "1 dia";
+		return `${days} dias`;
+	}
+
 	if (sessionPending || perfil !== "super") {
 		return (
 			<HStack justify="center" py={16}>
@@ -208,6 +235,7 @@ export default function DashboardEmpresas() {
 								<Table.ColumnHeader>CNPJ</Table.ColumnHeader>
 								<Table.ColumnHeader hideBelow="md">Email</Table.ColumnHeader>
 								<Table.ColumnHeader hideBelow="md">Cidade</Table.ColumnHeader>
+								<Table.ColumnHeader>Dias restantes</Table.ColumnHeader>
 								<Table.ColumnHeader textAlign="end">Ações</Table.ColumnHeader>
 							</Table.Row>
 						</Table.Header>
@@ -222,8 +250,16 @@ export default function DashboardEmpresas() {
 									<Table.Cell hideBelow="md">
 										{company.city}/{company.state}
 									</Table.Cell>
+									<Table.Cell
+										color={company.remainingDays <= 0 ? "fg.error" : undefined}
+										fontWeight={
+											company.remainingDays <= 7 ? "medium" : undefined
+										}
+									>
+										{formatRemainingDays(company.remainingDays)}
+									</Table.Cell>
 									<Table.Cell textAlign="end">
-										<HStack gap={1} justify="flex-end">
+										<HStack gap={1} justify="flex-end" flexWrap="wrap">
 											<Button
 												size="xs"
 												variant="ghost"
@@ -245,6 +281,16 @@ export default function DashboardEmpresas() {
 												}}
 											>
 												Editar
+											</Button>
+											<Button
+												size="xs"
+												variant="ghost"
+												onClick={() => {
+													setSelected(company);
+													setRenewOpen(true);
+												}}
+											>
+												Renovar
 											</Button>
 											<Button
 												size="xs"
@@ -338,6 +384,44 @@ export default function DashboardEmpresas() {
 							</Dialog.ActionTrigger>
 							<Button colorPalette="red" onClick={() => void handleDelete()}>
 								Excluir
+							</Button>
+						</Dialog.Footer>
+					</Dialog.Content>
+				</Dialog.Positioner>
+			</Dialog.Root>
+
+			<Dialog.Root open={renewOpen} onOpenChange={(e) => setRenewOpen(e.open)}>
+				<Dialog.Backdrop />
+				<Dialog.Positioner>
+					<Dialog.Content bg="bg.panel">
+						<Dialog.Header>
+							<Dialog.Title>Renovar plano</Dialog.Title>
+							<Dialog.CloseTrigger />
+						</Dialog.Header>
+						<Dialog.Body>
+							<Text>
+								Renovar o plano de <strong>{selected?.tradeName}</strong> por{" "}
+								<strong>
+									{plans.find((p) => p.id === selected?.planId)?.durationDays ??
+										"—"}{" "}
+									dias
+								</strong>
+								, a partir de agora?
+							</Text>
+						</Dialog.Body>
+						<Dialog.Footer>
+							<Dialog.ActionTrigger asChild>
+								<Button variant="outline" disabled={renewing}>
+									Cancelar
+								</Button>
+							</Dialog.ActionTrigger>
+							<Button
+								bg="helios.solid"
+								color="helios.contrast"
+								loading={renewing}
+								onClick={() => void handleRenew()}
+							>
+								Renovar
 							</Button>
 						</Dialog.Footer>
 					</Dialog.Content>
