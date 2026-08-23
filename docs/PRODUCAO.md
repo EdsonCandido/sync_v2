@@ -71,10 +71,16 @@ Subir:
 
 ```bash
 docker compose up -d --build
-# db:push via packages/db (Turbo na raiz esvazia DATABASE_URL)
-docker compose exec server sh -c 'cd /app/packages/db && npm run db:push'
+# db:migrate via packages/db (Turbo na raiz esvazia DATABASE_URL)
+docker compose exec -T server sh -c 'cd /app/packages/db && npm run db:migrate'
 # se seed rodou antes do schema:
 docker compose restart server
+```
+
+Após migrate com tabela de módulos por empresa nova:
+
+```bash
+docker compose exec server sh -c 'cd /app && npm run db:grant-all-company-modules -w server'
 ```
 
 ## Deploy recorrente
@@ -85,7 +91,9 @@ Na raiz do clone (`/opt/sync_v2`):
 ./deploy.sh
 ```
 
-O script faz `git pull`, define `VITE_APP_VERSION` com o SHA curto do Git, `docker compose up -d --build` e `db:push`. O SHA entra no build do `web` (`.git` não vai para a imagem).
+O script faz `git pull`, define `VITE_APP_VERSION` com o SHA curto do Git, `docker compose up -d --build` e `db:migrate` (SQL versionado em `packages/db/src/migrations`, sem prompt TTY). O SHA entra no build do `web` (`.git` não vai para a imagem).
+
+Novas mudanças de schema em produção: `npm run db:generate -w @sync_v2/db` → commit do SQL → deploy.
 
 ## Seed
 

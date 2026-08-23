@@ -53,7 +53,9 @@ UI: Chakra UI v3 — helpers em `apps/web/src/components/ui/`.
 | `npm run build` | Build de todos os apps |
 | `npm run dev:web` / `dev:server` | Só web ou só API |
 | `npm run db:start` | Sobe Postgres (Docker) |
-| `npm run db:push` | Aplica schema no banco |
+| `npm run db:push` | Aplica schema no banco (dev / prototipagem) |
+| `npm run db:migrate` | Aplica migrations SQL (produção / deploy) |
+| `npm run db:generate` | Gera migration a partir do schema TS |
 | `npm run db:seed` | Bootstrap Helios (usuários, empresa, etc.) |
 | `npm run db:studio` | Drizzle Studio |
 | `npm run check` | Biome format + lint |
