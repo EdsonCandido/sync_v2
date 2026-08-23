@@ -9,7 +9,8 @@
 		"dev": "tsx watch src/index.ts",
 		"start": "node dist/index.mjs",
 		"db:seed": "sh ./run-cli.sh seed",
-		"db:seed-financeiro-defaults": "sh ./run-cli.sh backfillFinanceiroDefaults"
+		"db:seed-financeiro-defaults": "sh ./run-cli.sh backfillFinanceiroDefaults",
+		"db:grant-all-company-modules": "sh ./run-cli.sh grantAllCompanyModules"
 	},
 	"dependencies": {
 		"@sync_v2/auth": "*",

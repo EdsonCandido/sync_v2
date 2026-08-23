@@ -3,7 +3,7 @@
 set -e
 name="$1"
 if [ -z "$name" ]; then
-	echo "Uso: run-cli.sh <seed|backfillFinanceiroDefaults>" >&2
+	echo "Uso: run-cli.sh <seed|backfillFinanceiroDefaults|grantAllCompanyModules>" >&2
 	exit 1
 fi
 

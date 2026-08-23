@@ -51,6 +51,24 @@ export type CompanyInput = {
 	planId: string;
 };
 
+export type ModuleKey =
+	| "clientes"
+	| "financeiro"
+	| "itr"
+	| "kanban"
+	| "agendamentos"
+	| "usuarios";
+
+export type CompanyModulePermissionItem = {
+	moduleKey: ModuleKey;
+	canAccess: boolean;
+	canLiberate: boolean;
+};
+
+export type CompanyModulesResponse = {
+	modules: CompanyModulePermissionItem[];
+};
+
 export type CepResult = {
 	zipCode: string;
 	street: string;
@@ -86,6 +104,13 @@ export const companiesApi = {
 		}),
 	remove: (id: string) =>
 		apiFetch<Company>(`/api/companies/${id}`, { method: "DELETE" }),
+	getModules: (companyId: string) =>
+		apiFetch<CompanyModulesResponse>(`/api/companies/${companyId}/modules`),
+	upsertModules: (companyId: string, modules: CompanyModulePermissionItem[]) =>
+		apiFetch<CompanyModulesResponse>(`/api/companies/${companyId}/modules`, {
+			method: "PUT",
+			body: JSON.stringify({ modules }),
+		}),
 };
 
 export { type Plan, plansApi } from "./plans-api";

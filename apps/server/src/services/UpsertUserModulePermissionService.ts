@@ -1,11 +1,12 @@
 import type { UpsertUserModulePermissionsInput } from "@sync_v2/contracts";
-import { APP_MODULES } from "@sync_v2/types";
 import { ModulePermissionRepository } from "../repositories/ModulePermissionRepository";
 import { AppError } from "../utils/AppError";
+import { GetCompanyModulesService } from "./GetCompanyModulesService";
 
 export class UpsertUserModulePermissionService {
 	constructor(
 		private readonly modulePermissionRepository = new ModulePermissionRepository(),
+		private readonly getCompanyModulesService = new GetCompanyModulesService(),
 	) {}
 
 	async execute(params: {
@@ -22,10 +23,16 @@ export class UpsertUserModulePermissionService {
 			throw new AppError(404, "Usuário não encontrado nesta empresa.");
 		}
 
-		const allowed = new Set(APP_MODULES);
+		const liberatable =
+			await this.getCompanyModulesService.liberatableKeys(params.companyId);
+		const liberatableSet = new Set(liberatable);
+
 		for (const item of params.input.modules) {
-			if (!allowed.has(item.moduleKey)) {
-				throw new AppError(400, `Módulo inválido: ${item.moduleKey}`);
+			if (!liberatableSet.has(item.moduleKey)) {
+				throw new AppError(
+					400,
+					`Módulo não liberável para esta empresa: ${item.moduleKey}`,
+				);
 			}
 
 			const canEdit = item.canEdit;
@@ -49,7 +56,7 @@ export class UpsertUserModulePermissionService {
 			userId: target.id,
 			name: target.name,
 			email: target.email,
-			modules: APP_MODULES.map((moduleKey) => {
+			modules: liberatable.map((moduleKey) => {
 				const row = byKey.get(moduleKey);
 				return {
 					moduleKey,

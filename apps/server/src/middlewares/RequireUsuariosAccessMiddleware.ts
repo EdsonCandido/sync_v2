@@ -1,6 +1,7 @@
 import type { ModuleAction } from "@sync_v2/types";
 import type { NextFunction, Request, Response } from "express";
 import { ModulePermissionRepository } from "../repositories/ModulePermissionRepository";
+import { GetCompanyModulesService } from "../services/GetCompanyModulesService";
 
 /**
  * Acesso ao módulo usuários.
@@ -11,6 +12,7 @@ export class RequireUsuariosAccessMiddleware {
 	constructor(
 		private readonly action: ModuleAction,
 		private readonly modulePermissionRepository = new ModulePermissionRepository(),
+		private readonly getCompanyModulesService = new GetCompanyModulesService(),
 	) {}
 
 	handle = async (req: Request, res: Response, next: NextFunction) => {
@@ -34,11 +36,28 @@ export class RequireUsuariosAccessMiddleware {
 					res.status(403).json({ message: "Empresa não vinculada." });
 					return;
 				}
+				const allowed = await this.getCompanyModulesService.canAccess(
+					companyId,
+					"usuarios",
+				);
+				if (!allowed) {
+					res.status(403).json({ message: "Sem permissão neste módulo." });
+					return;
+				}
 				next();
 				return;
 			}
 
 			if (perfil !== "cliente" || !companyId) {
+				res.status(403).json({ message: "Sem permissão neste módulo." });
+				return;
+			}
+
+			const companyAllowed = await this.getCompanyModulesService.canAccess(
+				companyId,
+				"usuarios",
+			);
+			if (!companyAllowed) {
 				res.status(403).json({ message: "Sem permissão neste módulo." });
 				return;
 			}

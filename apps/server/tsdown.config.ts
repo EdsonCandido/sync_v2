@@ -5,6 +5,7 @@ export default defineConfig({
 		index: "./src/index.ts",
 		seed: "./src/seed.ts",
 		backfillFinanceiroDefaults: "./src/backfillFinanceiroDefaults.ts",
+		grantAllCompanyModules: "./src/grantAllCompanyModules.ts",
 	},
 	format: "esm",
 	outDir: "./dist",

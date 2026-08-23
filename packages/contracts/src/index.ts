@@ -448,6 +448,41 @@ export type CompanyUserPermissions = z.infer<
 	typeof companyUserPermissionsSchema
 >;
 
+export const listCompanyUserPermissionsResponseSchema = z.object({
+	liberatableModules: z.array(moduleKeySchema),
+	users: z.array(companyUserPermissionsSchema),
+});
+
+export type ListCompanyUserPermissionsResponse = z.infer<
+	typeof listCompanyUserPermissionsResponseSchema
+>;
+
+export const companyModulePermissionItemSchema = z.object({
+	moduleKey: moduleKeySchema,
+	canAccess: z.boolean(),
+	canLiberate: z.boolean(),
+});
+
+export type CompanyModulePermissionItem = z.infer<
+	typeof companyModulePermissionItemSchema
+>;
+
+export const companyModulesResponseSchema = z.object({
+	modules: z.array(companyModulePermissionItemSchema),
+});
+
+export type CompanyModulesResponse = z.infer<
+	typeof companyModulesResponseSchema
+>;
+
+export const upsertCompanyModulesSchema = z.object({
+	modules: z.array(companyModulePermissionItemSchema),
+});
+
+export type UpsertCompanyModulesInput = z.infer<
+	typeof upsertCompanyModulesSchema
+>;
+
 export const kanbanHistoryEventTypeSchema = z.enum([
 	"created",
 	"updated",
