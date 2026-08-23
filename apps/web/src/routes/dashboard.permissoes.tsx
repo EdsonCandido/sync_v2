@@ -30,14 +30,6 @@ const MODULE_LABELS: Record<ModuleKey, string> = {
 	usuarios: "Usuários",
 };
 
-const MODULE_KEYS: ModuleKey[] = [
-	"clientes",
-	"financeiro",
-	"itr",
-	"kanban",
-	"agendamentos",
-	"usuarios",
-];
 export default function DashboardPermissoes() {
 	const navigate = useNavigate();
 	const { data: session, isPending: sessionPending } = authClient.useSession();
@@ -49,6 +41,7 @@ export default function DashboardPermissoes() {
 	const [drafts, setDrafts] = useState<Record<string, ModulePermissionItem[]>>(
 		{},
 	);
+	const [liberatableKeys, setLiberatableKeys] = useState<ModuleKey[]>([]);
 
 	useEffect(() => {
 		if (sessionPending) return;
@@ -61,17 +54,15 @@ export default function DashboardPermissoes() {
 		setLoading(true);
 		try {
 			const result = await modulePermissionsApi.listUsers();
-			setUsers(result);
+			setUsers(result.users);
+			setLiberatableKeys(result.liberatableModules);
 			const next: Record<string, ModulePermissionItem[]> = {};
-			for (const u of result) {
-				next[u.userId] = MODULE_KEYS.map((moduleKey) => {
-					const existing = u.modules.find((m) => m.moduleKey === moduleKey);
-					return {
-						moduleKey,
-						canRead: Boolean(existing?.canRead || existing?.canEdit),
-						canEdit: Boolean(existing?.canEdit),
-					};
-				});
+			for (const u of result.users) {
+				next[u.userId] = u.modules.map((m) => ({
+					moduleKey: m.moduleKey,
+					canRead: Boolean(m.canRead || m.canEdit),
+					canEdit: Boolean(m.canEdit),
+				}));
 			}
 			setDrafts(next);
 		} catch (error) {
@@ -128,6 +119,14 @@ export default function DashboardPermissoes() {
 		try {
 			const updated = await modulePermissionsApi.upsertUser(userId, modules);
 			setUsers((prev) => prev.map((u) => (u.userId === userId ? updated : u)));
+			setDrafts((prev) => ({
+				...prev,
+				[userId]: updated.modules.map((m) => ({
+					moduleKey: m.moduleKey,
+					canRead: Boolean(m.canRead || m.canEdit),
+					canEdit: Boolean(m.canEdit),
+				})),
+			}));
 			toaster.create({ title: "Permissões salvas", type: "success" });
 		} catch (error) {
 			toaster.create({
@@ -171,6 +170,10 @@ export default function DashboardPermissoes() {
 				<HStack justify="center" py={10}>
 					<Spinner />
 				</HStack>
+			) : liberatableKeys.length === 0 ? (
+				<Text color="fg.muted" py={8}>
+					Nenhum módulo liberável para esta empresa. Contate o suporte.
+				</Text>
 			) : users.length === 0 ? (
 				<Text color="fg.muted" py={8}>
 					Nenhum usuário com perfil cliente nesta empresa.

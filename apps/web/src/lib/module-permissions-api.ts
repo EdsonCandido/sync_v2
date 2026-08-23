@@ -25,10 +25,17 @@ export type CompanyUserPermissions = {
 	modules: ModulePermissionItem[];
 };
 
+export type ListCompanyUserPermissionsResponse = {
+	liberatableModules: ModuleKey[];
+	users: CompanyUserPermissions[];
+};
+
 export const modulePermissionsApi = {
 	me: () => apiFetch<MyModulesResponse>("/api/module-permissions/me"),
 	listUsers: () =>
-		apiFetch<CompanyUserPermissions[]>("/api/module-permissions/users"),
+		apiFetch<ListCompanyUserPermissionsResponse>(
+			"/api/module-permissions/users",
+		),
 	upsertUser: (userId: string, modules: ModulePermissionItem[]) =>
 		apiFetch<CompanyUserPermissions>(
 			`/api/module-permissions/users/${userId}`,

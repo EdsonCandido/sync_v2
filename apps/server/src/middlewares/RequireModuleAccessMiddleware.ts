@@ -1,12 +1,14 @@
 import type { ModuleAction, ModuleKey } from "@sync_v2/types";
 import type { NextFunction, Request, Response } from "express";
 import { ModulePermissionRepository } from "../repositories/ModulePermissionRepository";
+import { GetCompanyModulesService } from "../services/GetCompanyModulesService";
 
 export class RequireModuleAccessMiddleware {
 	constructor(
 		private readonly moduleKey: ModuleKey,
 		private readonly action: ModuleAction,
 		private readonly modulePermissionRepository = new ModulePermissionRepository(),
+		private readonly getCompanyModulesService = new GetCompanyModulesService(),
 	) {}
 
 	handle = async (req: Request, res: Response, next: NextFunction) => {
@@ -32,11 +34,28 @@ export class RequireModuleAccessMiddleware {
 					res.status(403).json({ message: "Empresa não vinculada." });
 					return;
 				}
+				const allowed = await this.getCompanyModulesService.canAccess(
+					companyId,
+					this.moduleKey,
+				);
+				if (!allowed) {
+					res.status(403).json({ message: "Sem permissão neste módulo." });
+					return;
+				}
 				next();
 				return;
 			}
 
 			if (perfil !== "cliente" || !companyId) {
+				res.status(403).json({ message: "Sem permissão neste módulo." });
+				return;
+			}
+
+			const companyAllowed = await this.getCompanyModulesService.canAccess(
+				companyId,
+				this.moduleKey,
+			);
+			if (!companyAllowed) {
 				res.status(403).json({ message: "Sem permissão neste módulo." });
 				return;
 			}
@@ -80,6 +99,7 @@ export function requireModuleAccess(
 export class RequireCepGeocodeAccessMiddleware {
 	constructor(
 		private readonly modulePermissionRepository = new ModulePermissionRepository(),
+		private readonly getCompanyModulesService = new GetCompanyModulesService(),
 	) {}
 
 	handle = async (req: Request, res: Response, next: NextFunction) => {
@@ -101,6 +121,20 @@ export class RequireCepGeocodeAccessMiddleware {
 			if (perfil === "admin_empresa") {
 				if (!companyId) {
 					res.status(403).json({ message: "Empresa não vinculada." });
+					return;
+				}
+				const canClientes = await this.getCompanyModulesService.canAccess(
+					companyId,
+					"clientes",
+				);
+				const canItr = await this.getCompanyModulesService.canAccess(
+					companyId,
+					"itr",
+				);
+				if (!canClientes && !canItr) {
+					res
+						.status(403)
+						.json({ message: "Sem permissão de edição em clientes ou ITR." });
 					return;
 				}
 				next();

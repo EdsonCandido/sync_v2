@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { CompanyFormDialog } from "@/components/empresas/CompanyFormDialog";
+import { CompanyModulesDialog } from "@/components/empresas/CompanyModulesDialog";
 import { toaster } from "@/components/ui/toaster";
 import { ApiError } from "@/lib/api";
 import { authClient } from "@/lib/auth-client";
@@ -44,6 +45,7 @@ export default function DashboardEmpresas() {
 	);
 	const [selected, setSelected] = useState<Company | null>(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [modulesOpen, setModulesOpen] = useState(false);
 
 	useEffect(() => {
 		if (sessionPending) return;
@@ -247,6 +249,16 @@ export default function DashboardEmpresas() {
 											<Button
 												size="xs"
 												variant="ghost"
+												onClick={() => {
+													setSelected(company);
+													setModulesOpen(true);
+												}}
+											>
+												Módulos
+											</Button>
+											<Button
+												size="xs"
+												variant="ghost"
 												colorPalette="red"
 												onClick={() => {
 													setSelected(company);
@@ -295,6 +307,12 @@ export default function DashboardEmpresas() {
 				company={selected}
 				plans={plans}
 				onSubmit={handleSubmit}
+			/>
+
+			<CompanyModulesDialog
+				open={modulesOpen}
+				onOpenChange={setModulesOpen}
+				company={selected}
 			/>
 
 			<Dialog.Root
