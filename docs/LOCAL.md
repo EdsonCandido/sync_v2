@@ -71,8 +71,22 @@ Outros comandos:
 
 ## 4. Schema
 
+Dev rápido (prototipagem):
+
 ```bash
 npm run db:push
+```
+
+Alinhado com produção (SQL versionado):
+
+```bash
+npm run db:migrate
+```
+
+Gerar migration após mudar o schema TS:
+
+```bash
+npm run db:generate -w @sync_v2/db
 ```
 
 O Drizzle lê `DATABASE_URL` de `apps/server/.env` (`packages/db/drizzle.config.ts`).
@@ -119,5 +133,5 @@ Para subir web + server + postgres como containers (não é o fluxo padrão de d
 | ------- | ------------ |
 | `docker.sock: no such file` | Docker Desktop ainda não subiu — espere e rode `docker ps` |
 | `network proxy ... not found` | Falta `docker network create proxy` |
-| `db:push` / seed não conecta | `DATABASE_URL` na porta errada (use `15432`, não `5432`) |
+| `db:push` / `db:migrate` / seed não conecta | `DATABASE_URL` na porta errada (use `15432`, não `5432`) |
 | CORS / login falha no browser | `CORS_ORIGIN` deve incluir `http://localhost:5173` no `npm run dev` (vários origins: vírgula) |
