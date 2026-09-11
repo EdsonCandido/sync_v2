@@ -5,12 +5,7 @@ import {
 	round2,
 } from "../repositories/FinancialEntryRepository";
 import { AppError } from "../utils/AppError";
-
-function addMonths(date: Date, months: number) {
-	const d = new Date(date);
-	d.setMonth(d.getMonth() + months);
-	return d;
-}
+import { addMonths } from "../utils/addMonths";
 
 export class RenegotiateFinancialEntryService {
 	constructor(
