@@ -92,6 +92,8 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 	const [editingEntry, setEditingEntry] = useState<FinancialEntry | null>(null);
 	const [selected, setSelected] = useState<FinancialEntry | null>(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [deleteHasOpenSiblings, setDeleteHasOpenSiblings] = useState(false);
+	const [deleteSaving, setDeleteSaving] = useState(false);
 	const [cancelOpen, setCancelOpen] = useState(false);
 
 	const [baixarOpen, setBaixarOpen] = useState(false);
@@ -261,19 +263,54 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 		}
 	}
 
-	async function handleDelete() {
+	async function openDelete(item: FinancialEntry) {
+		setSelected(item);
+		let hasOpenSiblings = false;
+
+		if (item.installmentGroupId && (item.installmentTotal ?? 1) > 1) {
+			try {
+				const result = await financeiroApi.listLancamentosGrupo(
+					item.installmentGroupId,
+				);
+				hasOpenSiblings = result.items.some(
+					(entry) =>
+						entry.id !== item.id &&
+						entry.status !== "pago" &&
+						entry.status !== "cancelado",
+				);
+			} catch {
+				hasOpenSiblings = true;
+			}
+		}
+
+		setDeleteHasOpenSiblings(hasOpenSiblings);
+		setDeleteOpen(true);
+	}
+
+	async function handleDelete(deleteOpenInstallments = false) {
 		if (!selected) return;
+		setDeleteSaving(true);
 		try {
-			await financeiroApi.removeLancamento(selected.id);
-			toaster.create({ title: "Lançamento excluído", type: "success" });
+			await financeiroApi.removeLancamento(selected.id, {
+				deleteOpenInstallments,
+			});
+			toaster.create({
+				title: deleteOpenInstallments
+					? "Lançamento e parcelas em aberto excluídos"
+					: "Lançamento excluído",
+				type: "success",
+			});
 			setDeleteOpen(false);
 			setSelected(null);
+			setDeleteHasOpenSiblings(false);
 			await load();
 		} catch (error) {
 			toaster.create({
 				title: error instanceof ApiError ? error.message : "Erro ao excluir",
 				type: "error",
 			});
+		} finally {
+			setDeleteSaving(false);
 		}
 	}
 
@@ -500,10 +537,7 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 														size="xs"
 														variant="ghost"
 														colorPalette="red"
-														onClick={() => {
-															setSelected(item);
-															setDeleteOpen(true);
-														}}
+														onClick={() => void openDelete(item)}
 													>
 														Excluir
 													</Button>
@@ -664,34 +698,84 @@ export function FinancialEntriesPage({ kind }: FinancialEntriesPageProps) {
 
 			<Dialog.Root
 				open={deleteOpen}
-				onOpenChange={(e) => setDeleteOpen(e.open)}
+				onOpenChange={(e) => {
+					setDeleteOpen(e.open);
+					if (!e.open) {
+						setDeleteHasOpenSiblings(false);
+					}
+				}}
 			>
 				<Dialog.Backdrop />
 				<Dialog.Positioner>
-					<Dialog.Content bg="bg.panel">
+					<Dialog.Content bg="bg.panel" maxW="md">
 						<Dialog.Header>
-							<Dialog.Title>Excluir lançamento</Dialog.Title>
+							<Dialog.Title>
+								{deleteHasOpenSiblings
+									? "Excluir parcelas"
+									: "Excluir lançamento"}
+							</Dialog.Title>
 							<Dialog.CloseTrigger />
 						</Dialog.Header>
 						<Dialog.Body>
-							<Text>
-								Confirma exclusão lógica deste lançamento
-								{selected?.documento ? (
-									<>
-										{" "}
-										(<strong>{selected.documento}</strong>)
-									</>
-								) : null}
-								?
-							</Text>
+							{deleteHasOpenSiblings ? (
+								<Text>
+									Esta conta faz parte de um parcelamento com outras parcelas em
+									aberto. Deseja excluir somente esta parcela ou também as
+									demais em aberto
+									{selected?.documento ? (
+										<>
+											{" "}
+											(<strong>{selected.documento}</strong>)
+										</>
+									) : null}
+									?
+								</Text>
+							) : (
+								<Text>
+									Confirma exclusão lógica deste lançamento
+									{selected?.documento ? (
+										<>
+											{" "}
+											(<strong>{selected.documento}</strong>)
+										</>
+									) : null}
+									?
+								</Text>
+							)}
 						</Dialog.Body>
-						<Dialog.Footer>
+						<Dialog.Footer flexWrap="wrap" gap="2">
 							<Dialog.ActionTrigger asChild>
-								<Button variant="outline">Cancelar</Button>
+								<Button variant="outline" disabled={deleteSaving}>
+									Cancelar
+								</Button>
 							</Dialog.ActionTrigger>
-							<Button colorPalette="red" onClick={() => void handleDelete()}>
-								Excluir
-							</Button>
+							{deleteHasOpenSiblings ? (
+								<>
+									<Button
+										variant="outline"
+										colorPalette="red"
+										loading={deleteSaving}
+										onClick={() => void handleDelete(false)}
+									>
+										Somente esta parcela
+									</Button>
+									<Button
+										colorPalette="red"
+										loading={deleteSaving}
+										onClick={() => void handleDelete(true)}
+									>
+										Demais em aberto
+									</Button>
+								</>
+							) : (
+								<Button
+									colorPalette="red"
+									loading={deleteSaving}
+									onClick={() => void handleDelete(false)}
+								>
+									Excluir
+								</Button>
+							)}
 						</Dialog.Footer>
 					</Dialog.Content>
 				</Dialog.Positioner>

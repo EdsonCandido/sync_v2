@@ -467,9 +467,13 @@ export const financeiroApi = {
 			method: "PUT",
 			body: JSON.stringify(body),
 		}),
-	removeLancamento: (id: string) =>
+	removeLancamento: (
+		id: string,
+		body?: { deleteOpenInstallments?: boolean },
+	) =>
 		apiFetch<FinancialEntry>(`/api/financeiro/lancamentos/${id}`, {
 			method: "DELETE",
+			body: JSON.stringify(body ?? {}),
 		}),
 	cancelLancamento: (id: string) =>
 		apiFetch<FinancialEntry>(`/api/financeiro/lancamentos/${id}/cancelar`, {

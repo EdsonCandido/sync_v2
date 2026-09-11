@@ -3,6 +3,7 @@ import {
 	listFinancialEntriesQuerySchema,
 	renegotiateFinancialEntrySchema,
 	settleFinancialEntrySchema,
+	softDeleteFinancialEntrySchema,
 	updateFinancialEntrySchema,
 } from "@sync_v2/contracts";
 import type { Request, Response } from "express";
@@ -130,11 +131,13 @@ export class FinancialEntryController {
 	softDelete = async (req: Request, res: Response) => {
 		try {
 			const companyId = requireCompanyId(req);
+			const body = softDeleteFinancialEntrySchema.parse(req.body ?? {});
 			res.json(
 				await this.softDeleteService.execute(
 					String(req.params.id),
 					companyId,
 					req.authSession!.user.id,
+					body,
 				),
 			);
 		} catch (error) {

@@ -992,6 +992,14 @@ export type UpdateFinancialEntryInput = z.infer<
 	typeof updateFinancialEntrySchema
 >;
 
+export const softDeleteFinancialEntrySchema = z.object({
+	deleteOpenInstallments: z.boolean().optional().default(false),
+});
+
+export type SoftDeleteFinancialEntryInput = z.infer<
+	typeof softDeleteFinancialEntrySchema
+>;
+
 export const listFinancialEntriesQuerySchema = z.object({
 	q: z.string().optional(),
 	kind: financialEntryKindSchema.optional(),
