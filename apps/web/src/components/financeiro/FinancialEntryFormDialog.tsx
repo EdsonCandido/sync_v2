@@ -193,12 +193,14 @@ export function FinancialEntryFormDialog({
 	const [bancos, setBancos] = useState<BankAccount[]>([]);
 	const [clients, setClients] = useState<Client[]>([]);
 	const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+	const [applyScopeOpen, setApplyScopeOpen] = useState(false);
 
 	useEffect(() => {
 		if (!open) {
 			setActiveEntryId(null);
 			setActiveEntry(null);
 			setGroupItems([]);
+			setApplyScopeOpen(false);
 			return;
 		}
 		if (isLoadedMode && entry?.id) {
@@ -346,6 +348,61 @@ export function FinancialEntryFormDialog({
 		else onCreated?.();
 	}
 
+	function countOtherOpenInstallments() {
+		if (!currentEntry?.installmentGroupId) return 0;
+		return groupItems.filter(
+			(item) =>
+				item.id !== currentEntry.id &&
+				item.status !== "pago" &&
+				item.status !== "cancelado",
+		).length;
+	}
+
+	function shouldAskApplyScope() {
+		if (!currentEntry?.installmentGroupId) return false;
+		if ((currentEntry.installmentTotal ?? 1) <= 1) return false;
+		if (groupItems.length === 0) return true;
+		return countOtherOpenInstallments() > 0;
+	}
+
+	async function saveEdit(applyToOpenInstallments: boolean) {
+		if (!currentEntry) return;
+		setSaving(true);
+		setApplyScopeOpen(false);
+		try {
+			await financeiroApi.updateLancamento(currentEntry.id, {
+				originLabel: form.originLabel.trim() || null,
+				clientId: kind === "receber" ? form.clientId || null : null,
+				supplierId: kind === "pagar" ? form.supplierId || null : null,
+				categoryId: form.categoryId || null,
+				costCenterId: form.costCenterId || null,
+				bankAccountId: form.bankAccountId || null,
+				documento: form.documento.trim() || null,
+				numero: form.numero.trim() || null,
+				dataEmissao: form.dataEmissao,
+				dataVencimento: form.dataVencimento,
+				observacoes: form.observacoes.trim() || null,
+				applyToOpenInstallments,
+			});
+			toaster.create({
+				title:
+					kind === "receber"
+						? "Conta a receber atualizada"
+						: "Conta a pagar atualizada",
+				type: "success",
+			});
+			onOpenChange(false);
+			notifySaved();
+		} catch (error) {
+			toaster.create({
+				title: error instanceof ApiError ? error.message : "Erro ao salvar",
+				type: "error",
+			});
+		} finally {
+			setSaving(false);
+		}
+	}
+
 	async function switchToEntry(next: FinancialEntry) {
 		if (!currentEntry || next.id === currentEntry.id) return;
 		if (next.id === activeEntryId) return;
@@ -370,38 +427,11 @@ export function FinancialEntryFormDialog({
 		}
 
 		if (isEdit && currentEntry) {
-			setSaving(true);
-			try {
-				await financeiroApi.updateLancamento(currentEntry.id, {
-					originLabel: form.originLabel.trim() || null,
-					clientId: kind === "receber" ? form.clientId || null : null,
-					supplierId: kind === "pagar" ? form.supplierId || null : null,
-					categoryId: form.categoryId || null,
-					costCenterId: form.costCenterId || null,
-					bankAccountId: form.bankAccountId || null,
-					documento: form.documento.trim() || null,
-					numero: form.numero.trim() || null,
-					dataEmissao: form.dataEmissao,
-					dataVencimento: form.dataVencimento,
-					observacoes: form.observacoes.trim() || null,
-				});
-				toaster.create({
-					title:
-						kind === "receber"
-							? "Conta a receber atualizada"
-							: "Conta a pagar atualizada",
-					type: "success",
-				});
-				onOpenChange(false);
-				notifySaved();
-			} catch (error) {
-				toaster.create({
-					title: error instanceof ApiError ? error.message : "Erro ao salvar",
-					type: "error",
-				});
-			} finally {
-				setSaving(false);
+			if (shouldAskApplyScope()) {
+				setApplyScopeOpen(true);
+				return;
 			}
+			await saveEdit(false);
 			return;
 		}
 
@@ -486,257 +516,227 @@ export function FinancialEntryFormDialog({
 	}
 
 	return (
-		<Dialog.Root open={open} onOpenChange={(e) => onOpenChange(e.open)}>
-			<Dialog.Backdrop />
-			<Dialog.Positioner>
-				<Dialog.Content bg="bg.panel" maxW={showGroup ? "3xl" : "640px"}>
-					<Dialog.Header>
-						<Dialog.Title>{title}</Dialog.Title>
-						<Dialog.CloseTrigger />
-					</Dialog.Header>
-					<Dialog.Body>
-						<Stack gap={4}>
-							{showGroup ? (
-								<Stack gap={2}>
-									<Text fontWeight="medium">Parcelas do grupo</Text>
-									<Table.ScrollArea maxH="220px">
-										<Table.Root size="sm" stickyHeader>
-											<Table.Header>
-												<Table.Row>
-													<Table.ColumnHeader>Nº</Table.ColumnHeader>
-													<Table.ColumnHeader>Vencimento</Table.ColumnHeader>
-													<Table.ColumnHeader textAlign="end">
-														Valor
-													</Table.ColumnHeader>
-													<Table.ColumnHeader>Status</Table.ColumnHeader>
-												</Table.Row>
-											</Table.Header>
-											<Table.Body>
-												{groupItems.map((item) => {
-													const current = item.id === activeEntryId;
-													return (
-														<Table.Row
-															key={item.id}
-															cursor={current ? "default" : "pointer"}
-															bg={current ? "bg.muted" : undefined}
-															opacity={switching ? 0.7 : 1}
-															onClick={() => void switchToEntry(item)}
-														>
-															<Table.Cell>
-																{`${item.installmentNumber ?? "—"}/${item.installmentTotal ?? "—"}`}
-															</Table.Cell>
-															<Table.Cell>
-																{formatDate(item.dataVencimento)}
-															</Table.Cell>
-															<Table.Cell textAlign="end">
-																{formatMoney(item.valorOriginal)}
-															</Table.Cell>
-															<Table.Cell>
-																{STATUS_LABEL[item.status] ?? item.status}
-															</Table.Cell>
-														</Table.Row>
-													);
-												})}
-											</Table.Body>
-										</Table.Root>
-									</Table.ScrollArea>
-								</Stack>
-							) : null}
+		<>
+			<Dialog.Root open={open} onOpenChange={(e) => onOpenChange(e.open)}>
+				<Dialog.Backdrop />
+				<Dialog.Positioner>
+					<Dialog.Content bg="bg.panel" maxW={showGroup ? "3xl" : "640px"}>
+						<Dialog.Header>
+							<Dialog.Title>{title}</Dialog.Title>
+							<Dialog.CloseTrigger />
+						</Dialog.Header>
+						<Dialog.Body>
+							<Stack gap={4}>
+								{showGroup ? (
+									<Stack gap={2}>
+										<Text fontWeight="medium">Parcelas do grupo</Text>
+										<Table.ScrollArea maxH="220px">
+											<Table.Root size="sm" stickyHeader>
+												<Table.Header>
+													<Table.Row>
+														<Table.ColumnHeader>Nº</Table.ColumnHeader>
+														<Table.ColumnHeader>Vencimento</Table.ColumnHeader>
+														<Table.ColumnHeader textAlign="end">
+															Valor
+														</Table.ColumnHeader>
+														<Table.ColumnHeader>Status</Table.ColumnHeader>
+													</Table.Row>
+												</Table.Header>
+												<Table.Body>
+													{groupItems.map((item) => {
+														const current = item.id === activeEntryId;
+														return (
+															<Table.Row
+																key={item.id}
+																cursor={current ? "default" : "pointer"}
+																bg={current ? "bg.muted" : undefined}
+																opacity={switching ? 0.7 : 1}
+																onClick={() => void switchToEntry(item)}
+															>
+																<Table.Cell>
+																	{`${item.installmentNumber ?? "—"}/${item.installmentTotal ?? "—"}`}
+																</Table.Cell>
+																<Table.Cell>
+																	{formatDate(item.dataVencimento)}
+																</Table.Cell>
+																<Table.Cell textAlign="end">
+																	{formatMoney(item.valorOriginal)}
+																</Table.Cell>
+																<Table.Cell>
+																	{STATUS_LABEL[item.status] ?? item.status}
+																</Table.Cell>
+															</Table.Row>
+														);
+													})}
+												</Table.Body>
+											</Table.Root>
+										</Table.ScrollArea>
+									</Stack>
+								) : null}
 
-							{isReadOnly && currentEntry ? (
-								<Stack gap={1}>
-									<Text fontSize="sm">
-										Status: {STATUS_LABEL[currentEntry.status]}
-									</Text>
-									<HStack gap={4} flexWrap="wrap">
+								{isReadOnly && currentEntry ? (
+									<Stack gap={1}>
 										<Text fontSize="sm">
-											Pago: {formatMoney(currentEntry.valorPago)}
+											Status: {STATUS_LABEL[currentEntry.status]}
 										</Text>
-										<Text fontSize="sm">
-											Aberto: {formatMoney(currentEntry.valorAberto)}
-										</Text>
-										<Text fontSize="sm">
-											Liquidação:{" "}
-											{currentEntry.dataLiquidacao
-												? formatDate(currentEntry.dataLiquidacao)
-												: "—"}
-										</Text>
-									</HStack>
-								</Stack>
-							) : null}
+										<HStack gap={4} flexWrap="wrap">
+											<Text fontSize="sm">
+												Pago: {formatMoney(currentEntry.valorPago)}
+											</Text>
+											<Text fontSize="sm">
+												Aberto: {formatMoney(currentEntry.valorAberto)}
+											</Text>
+											<Text fontSize="sm">
+												Liquidação:{" "}
+												{currentEntry.dataLiquidacao
+													? formatDate(currentEntry.dataLiquidacao)
+													: "—"}
+											</Text>
+										</HStack>
+									</Stack>
+								) : null}
 
-							<HStack gap={3} align="flex-start">
-								<Field.Root
-									required={!isEdit && !isReadOnly}
-									flex="1"
-									disabled={isReadOnly}
-								>
-									<Field.Label>Valor original</Field.Label>
-									<MoneyInput
-										placeholder="R$ 0,00"
-										value={form.valorOriginal}
-										disabled={isEdit || isReadOnly}
-										onChange={(valorOriginal) =>
-											setForm((f) => ({ ...f, valorOriginal }))
-										}
-									/>
-								</Field.Root>
-								{!isEdit && !isReadOnly && (
-									<Field.Root flex="1">
-										<Field.Label>Parcelas</Field.Label>
-										<Input
-											type="number"
-											min="1"
-											value={form.parcelas}
-											onChange={(e) =>
-												setForm((f) => ({ ...f, parcelas: e.target.value }))
+								<HStack gap={3} align="flex-start">
+									<Field.Root
+										required={!isEdit && !isReadOnly}
+										flex="1"
+										disabled={isReadOnly}
+									>
+										<Field.Label>Valor original</Field.Label>
+										<MoneyInput
+											placeholder="R$ 0,00"
+											value={form.valorOriginal}
+											disabled={isEdit || isReadOnly}
+											onChange={(valorOriginal) =>
+												setForm((f) => ({ ...f, valorOriginal }))
 											}
 										/>
 									</Field.Root>
-								)}
-							</HStack>
+									{!isEdit && !isReadOnly && (
+										<Field.Root flex="1">
+											<Field.Label>Parcelas</Field.Label>
+											<Input
+												type="number"
+												min="1"
+												value={form.parcelas}
+												onChange={(e) =>
+													setForm((f) => ({ ...f, parcelas: e.target.value }))
+												}
+											/>
+										</Field.Root>
+									)}
+								</HStack>
 
-							{showParcelamento ? (
-								<Field.Root>
-									<Field.Label>Como aplicar o valor</Field.Label>
-									<RadioGroup.Root
-										value={form.parcelamentoModo}
-										onValueChange={(e) => {
-											const value = e.value;
-											if (value !== "dividir" && value !== "repetir") return;
-											setForm((f) => ({ ...f, parcelamentoModo: value }));
-										}}
-									>
-										<Stack gap={2}>
-											<RadioGroup.Item value="dividir">
-												<HStack gap={2}>
-													<RadioGroup.ItemHiddenInput />
-													<RadioGroup.ItemIndicator />
-													<RadioGroup.ItemText>
-														Dividir valor entre as parcelas
-													</RadioGroup.ItemText>
-												</HStack>
-											</RadioGroup.Item>
-											<RadioGroup.Item value="repetir">
-												<HStack gap={2}>
-													<RadioGroup.ItemHiddenInput />
-													<RadioGroup.ItemIndicator />
-													<RadioGroup.ItemText>
-														Repetir o mesmo valor em cada parcela
-													</RadioGroup.ItemText>
-												</HStack>
-											</RadioGroup.Item>
-										</Stack>
-									</RadioGroup.Root>
-								</Field.Root>
-							) : null}
+								{showParcelamento ? (
+									<Field.Root>
+										<Field.Label>Como aplicar o valor</Field.Label>
+										<RadioGroup.Root
+											value={form.parcelamentoModo}
+											onValueChange={(e) => {
+												const value = e.value;
+												if (value !== "dividir" && value !== "repetir") return;
+												setForm((f) => ({ ...f, parcelamentoModo: value }));
+											}}
+										>
+											<Stack gap={2}>
+												<RadioGroup.Item value="dividir">
+													<HStack gap={2}>
+														<RadioGroup.ItemHiddenInput />
+														<RadioGroup.ItemIndicator />
+														<RadioGroup.ItemText>
+															Dividir valor entre as parcelas
+														</RadioGroup.ItemText>
+													</HStack>
+												</RadioGroup.Item>
+												<RadioGroup.Item value="repetir">
+													<HStack gap={2}>
+														<RadioGroup.ItemHiddenInput />
+														<RadioGroup.ItemIndicator />
+														<RadioGroup.ItemText>
+															Repetir o mesmo valor em cada parcela
+														</RadioGroup.ItemText>
+													</HStack>
+												</RadioGroup.Item>
+											</Stack>
+										</RadioGroup.Root>
+									</Field.Root>
+								) : null}
 
-							{previewRows.length > 0 ? (
-								<Stack gap={2}>
-									<Text fontWeight="medium">Preview das parcelas</Text>
-									<Table.ScrollArea maxH="180px">
-										<Table.Root size="sm">
-											<Table.Header>
-												<Table.Row>
-													<Table.ColumnHeader>Nº</Table.ColumnHeader>
-													<Table.ColumnHeader>Vencimento</Table.ColumnHeader>
-													<Table.ColumnHeader textAlign="end">
-														Valor
-													</Table.ColumnHeader>
-												</Table.Row>
-											</Table.Header>
-											<Table.Body>
-												{previewRows.map((row) => (
-													<Table.Row key={row.numero}>
-														<Table.Cell>
-															{`${row.numero}/${parcelasCount}`}
-														</Table.Cell>
-														<Table.Cell>
-															{formatDate(row.vencimento)}
-														</Table.Cell>
-														<Table.Cell textAlign="end">
-															{formatMoney(row.valor)}
-														</Table.Cell>
+								{previewRows.length > 0 ? (
+									<Stack gap={2}>
+										<Text fontWeight="medium">Preview das parcelas</Text>
+										<Table.ScrollArea maxH="180px">
+											<Table.Root size="sm">
+												<Table.Header>
+													<Table.Row>
+														<Table.ColumnHeader>Nº</Table.ColumnHeader>
+														<Table.ColumnHeader>Vencimento</Table.ColumnHeader>
+														<Table.ColumnHeader textAlign="end">
+															Valor
+														</Table.ColumnHeader>
 													</Table.Row>
-												))}
-											</Table.Body>
-										</Table.Root>
-									</Table.ScrollArea>
-									<Text fontSize="sm" color="fg.muted">
-										Total do grupo: {formatMoney(previewTotal)}
-									</Text>
-								</Stack>
-							) : null}
+												</Table.Header>
+												<Table.Body>
+													{previewRows.map((row) => (
+														<Table.Row key={row.numero}>
+															<Table.Cell>
+																{`${row.numero}/${parcelasCount}`}
+															</Table.Cell>
+															<Table.Cell>
+																{formatDate(row.vencimento)}
+															</Table.Cell>
+															<Table.Cell textAlign="end">
+																{formatMoney(row.valor)}
+															</Table.Cell>
+														</Table.Row>
+													))}
+												</Table.Body>
+											</Table.Root>
+										</Table.ScrollArea>
+										<Text fontSize="sm" color="fg.muted">
+											Total do grupo: {formatMoney(previewTotal)}
+										</Text>
+									</Stack>
+								) : null}
 
-							<HStack gap={3} align="flex-start">
-								<Field.Root required flex="1" disabled={isReadOnly}>
-									<Field.Label>Data de emissão</Field.Label>
-									<Input
-										type="date"
-										value={form.dataEmissao}
-										readOnly={isReadOnly}
-										onChange={(e) =>
-											setForm((f) => ({
-												...f,
-												dataEmissao: e.target.value,
-											}))
-										}
-									/>
-								</Field.Root>
-								<Field.Root required flex="1" disabled={isReadOnly}>
-									<Field.Label>Data de vencimento</Field.Label>
-									<Input
-										type="date"
-										value={form.dataVencimento}
-										readOnly={isReadOnly}
-										onChange={(e) =>
-											setForm((f) => ({
-												...f,
-												dataVencimento: e.target.value,
-											}))
-										}
-									/>
-								</Field.Root>
-							</HStack>
-
-							{showOriginFields &&
-								(isEdit || isReadOnly ? (
-									<Field.Root disabled={isReadOnly}>
-										<Field.Label>Rótulo da origem</Field.Label>
+								<HStack gap={3} align="flex-start">
+									<Field.Root required flex="1" disabled={isReadOnly}>
+										<Field.Label>Data de emissão</Field.Label>
 										<Input
-											value={form.originLabel}
+											type="date"
+											value={form.dataEmissao}
 											readOnly={isReadOnly}
 											onChange={(e) =>
 												setForm((f) => ({
 													...f,
-													originLabel: e.target.value,
+													dataEmissao: e.target.value,
 												}))
 											}
 										/>
 									</Field.Root>
-								) : (
-									<HStack gap={3} align="flex-start">
-										<Field.Root flex="1">
-											<Field.Label>Tipo de origem</Field.Label>
-											<NativeSelect.Root>
-												<NativeSelect.Field
-													value={form.originType}
-													onChange={(e) =>
-														setForm((f) => ({
-															...f,
-															originType: e.target.value as "avulsa" | "manual",
-														}))
-													}
-												>
-													<option value="avulsa">Avulsa</option>
-													<option value="manual">Manual</option>
-												</NativeSelect.Field>
-											</NativeSelect.Root>
-										</Field.Root>
-										<Field.Root flex="1">
+									<Field.Root required flex="1" disabled={isReadOnly}>
+										<Field.Label>Data de vencimento</Field.Label>
+										<Input
+											type="date"
+											value={form.dataVencimento}
+											readOnly={isReadOnly}
+											onChange={(e) =>
+												setForm((f) => ({
+													...f,
+													dataVencimento: e.target.value,
+												}))
+											}
+										/>
+									</Field.Root>
+								</HStack>
+
+								{showOriginFields &&
+									(isEdit || isReadOnly ? (
+										<Field.Root disabled={isReadOnly}>
 											<Field.Label>Rótulo da origem</Field.Label>
 											<Input
 												value={form.originLabel}
+												readOnly={isReadOnly}
 												onChange={(e) =>
 													setForm((f) => ({
 														...f,
@@ -745,232 +745,307 @@ export function FinancialEntryFormDialog({
 												}
 											/>
 										</Field.Root>
-									</HStack>
-								))}
-
-							{kind === "receber" ? (
-								<Field.Root disabled={isReadOnly}>
-									<Field.Label>Cliente</Field.Label>
-									<NativeSelect.Root disabled={isReadOnly}>
-										<NativeSelect.Field
-											value={form.clientId}
-											disabled={isReadOnly}
-											onChange={(e) =>
-												setForm((f) => ({
-													...f,
-													clientId: e.target.value,
-												}))
-											}
-										>
-											<option value="">Sem cliente</option>
-											{clients.map((c) => (
-												<option key={c.id} value={c.id}>
-													{c.personType === "PJ"
-														? (c.tradeName ?? c.name)
-														: c.name}
-												</option>
-											))}
-										</NativeSelect.Field>
-									</NativeSelect.Root>
-								</Field.Root>
-							) : (
-								<Field.Root disabled={isReadOnly}>
-									<Field.Label>Fornecedor</Field.Label>
-									<NativeSelect.Root disabled={isReadOnly}>
-										<NativeSelect.Field
-											value={form.supplierId}
-											disabled={isReadOnly}
-											onChange={(e) =>
-												setForm((f) => ({
-													...f,
-													supplierId: e.target.value,
-												}))
-											}
-										>
-											<option value="">Sem fornecedor</option>
-											{suppliers.map((s) => (
-												<option key={s.id} value={s.id}>
-													{s.name}
-												</option>
-											))}
-										</NativeSelect.Field>
-									</NativeSelect.Root>
-								</Field.Root>
-							)}
-
-							<Field.Root disabled={isReadOnly}>
-								<Field.Label>Categoria</Field.Label>
-								<NativeSelect.Root disabled={isReadOnly}>
-									<NativeSelect.Field
-										value={form.categoryId}
-										disabled={isReadOnly}
-										onChange={(e) =>
-											setForm((f) => ({
-												...f,
-												categoryId: e.target.value,
-											}))
-										}
-									>
-										<option value="">Sem categoria</option>
-										{categories.map((c) => (
-											<option key={c.id} value={c.id}>
-												{c.name}
-											</option>
-										))}
-									</NativeSelect.Field>
-								</NativeSelect.Root>
-							</Field.Root>
-
-							<HStack gap={3} align="flex-start">
-								<Field.Root flex="1" disabled={isReadOnly}>
-									<Field.Label>Centro de custo</Field.Label>
-									<NativeSelect.Root disabled={isReadOnly}>
-										<NativeSelect.Field
-											value={form.costCenterId}
-											disabled={isReadOnly}
-											onChange={(e) =>
-												setForm((f) => ({
-													...f,
-													costCenterId: e.target.value,
-												}))
-											}
-										>
-											<option value="">Sem centro</option>
-											{centros.map((c) => (
-												<option key={c.id} value={c.id}>
-													{c.codigo} — {c.name}
-												</option>
-											))}
-										</NativeSelect.Field>
-									</NativeSelect.Root>
-								</Field.Root>
-								<Field.Root flex="1" disabled={isReadOnly}>
-									<Field.Label>Conta bancária</Field.Label>
-									<NativeSelect.Root disabled={isReadOnly}>
-										<NativeSelect.Field
-											value={form.bankAccountId}
-											disabled={isReadOnly}
-											onChange={(e) =>
-												setForm((f) => ({
-													...f,
-													bankAccountId: e.target.value,
-												}))
-											}
-										>
-											<option value="">Sem conta</option>
-											{bancos.map((b) => (
-												<option key={b.id} value={b.id}>
-													{b.banco} — {b.conta}
-												</option>
-											))}
-										</NativeSelect.Field>
-									</NativeSelect.Root>
-								</Field.Root>
-							</HStack>
-
-							<HStack gap={3} align="flex-start" flexWrap="wrap">
-								<Field.Root flex="1" minW="140px" disabled={isReadOnly}>
-									<Field.Label>Documento</Field.Label>
-									<Input
-										value={form.documento}
-										readOnly={isReadOnly}
-										onChange={(e) =>
-											setForm((f) => ({
-												...f,
-												documento: e.target.value,
-											}))
-										}
-									/>
-								</Field.Root>
-								<Field.Root flex="1" minW="140px" disabled={isReadOnly}>
-									<Field.Label>Número</Field.Label>
-									<Input
-										value={form.numero}
-										readOnly={isReadOnly}
-										onChange={(e) =>
-											setForm((f) => ({ ...f, numero: e.target.value }))
-										}
-									/>
-								</Field.Root>
-							</HStack>
-
-							<Field.Root disabled={isReadOnly}>
-								<Field.Label>Observações</Field.Label>
-								<Textarea
-									value={form.observacoes}
-									readOnly={isReadOnly}
-									onChange={(e) =>
-										setForm((f) => ({
-											...f,
-											observacoes: e.target.value,
-										}))
-									}
-									rows={3}
-								/>
-							</Field.Root>
-
-							{isReadOnly ? (
-								<Stack gap={2}>
-									<Text fontWeight="medium">Pagamentos</Text>
-									{payments.length === 0 ? (
-										<Text fontSize="sm" color="fg.muted">
-											Nenhum pagamento registrado
-										</Text>
 									) : (
-										<Table.ScrollArea maxH="200px">
-											<Table.Root size="sm">
-												<Table.Header>
-													<Table.Row>
-														<Table.ColumnHeader>Data</Table.ColumnHeader>
-														<Table.ColumnHeader textAlign="end">
-															Valor
-														</Table.ColumnHeader>
-														<Table.ColumnHeader hideBelow="md">
-															Conta
-														</Table.ColumnHeader>
-													</Table.Row>
-												</Table.Header>
-												<Table.Body>
-													{payments.map((payment) => (
-														<Table.Row key={payment.id}>
-															<Table.Cell>
-																{formatDate(payment.dataPagamento)}
-															</Table.Cell>
-															<Table.Cell textAlign="end">
-																{formatMoney(payment.valor)}
-															</Table.Cell>
-															<Table.Cell hideBelow="md">
-																{bankLabel(payment.bankAccountId)}
-															</Table.Cell>
+										<HStack gap={3} align="flex-start">
+											<Field.Root flex="1">
+												<Field.Label>Tipo de origem</Field.Label>
+												<NativeSelect.Root>
+													<NativeSelect.Field
+														value={form.originType}
+														onChange={(e) =>
+															setForm((f) => ({
+																...f,
+																originType: e.target.value as
+																	| "avulsa"
+																	| "manual",
+															}))
+														}
+													>
+														<option value="avulsa">Avulsa</option>
+														<option value="manual">Manual</option>
+													</NativeSelect.Field>
+												</NativeSelect.Root>
+											</Field.Root>
+											<Field.Root flex="1">
+												<Field.Label>Rótulo da origem</Field.Label>
+												<Input
+													value={form.originLabel}
+													onChange={(e) =>
+														setForm((f) => ({
+															...f,
+															originLabel: e.target.value,
+														}))
+													}
+												/>
+											</Field.Root>
+										</HStack>
+									))}
+
+								{kind === "receber" ? (
+									<Field.Root disabled={isReadOnly}>
+										<Field.Label>Cliente</Field.Label>
+										<NativeSelect.Root disabled={isReadOnly}>
+											<NativeSelect.Field
+												value={form.clientId}
+												disabled={isReadOnly}
+												onChange={(e) =>
+													setForm((f) => ({
+														...f,
+														clientId: e.target.value,
+													}))
+												}
+											>
+												<option value="">Sem cliente</option>
+												{clients.map((c) => (
+													<option key={c.id} value={c.id}>
+														{c.personType === "PJ"
+															? (c.tradeName ?? c.name)
+															: c.name}
+													</option>
+												))}
+											</NativeSelect.Field>
+										</NativeSelect.Root>
+									</Field.Root>
+								) : (
+									<Field.Root disabled={isReadOnly}>
+										<Field.Label>Fornecedor</Field.Label>
+										<NativeSelect.Root disabled={isReadOnly}>
+											<NativeSelect.Field
+												value={form.supplierId}
+												disabled={isReadOnly}
+												onChange={(e) =>
+													setForm((f) => ({
+														...f,
+														supplierId: e.target.value,
+													}))
+												}
+											>
+												<option value="">Sem fornecedor</option>
+												{suppliers.map((s) => (
+													<option key={s.id} value={s.id}>
+														{s.name}
+													</option>
+												))}
+											</NativeSelect.Field>
+										</NativeSelect.Root>
+									</Field.Root>
+								)}
+
+								<Field.Root disabled={isReadOnly}>
+									<Field.Label>Categoria</Field.Label>
+									<NativeSelect.Root disabled={isReadOnly}>
+										<NativeSelect.Field
+											value={form.categoryId}
+											disabled={isReadOnly}
+											onChange={(e) =>
+												setForm((f) => ({
+													...f,
+													categoryId: e.target.value,
+												}))
+											}
+										>
+											<option value="">Sem categoria</option>
+											{categories.map((c) => (
+												<option key={c.id} value={c.id}>
+													{c.name}
+												</option>
+											))}
+										</NativeSelect.Field>
+									</NativeSelect.Root>
+								</Field.Root>
+
+								<HStack gap={3} align="flex-start">
+									<Field.Root flex="1" disabled={isReadOnly}>
+										<Field.Label>Centro de custo</Field.Label>
+										<NativeSelect.Root disabled={isReadOnly}>
+											<NativeSelect.Field
+												value={form.costCenterId}
+												disabled={isReadOnly}
+												onChange={(e) =>
+													setForm((f) => ({
+														...f,
+														costCenterId: e.target.value,
+													}))
+												}
+											>
+												<option value="">Sem centro</option>
+												{centros.map((c) => (
+													<option key={c.id} value={c.id}>
+														{c.codigo} — {c.name}
+													</option>
+												))}
+											</NativeSelect.Field>
+										</NativeSelect.Root>
+									</Field.Root>
+									<Field.Root flex="1" disabled={isReadOnly}>
+										<Field.Label>Conta bancária</Field.Label>
+										<NativeSelect.Root disabled={isReadOnly}>
+											<NativeSelect.Field
+												value={form.bankAccountId}
+												disabled={isReadOnly}
+												onChange={(e) =>
+													setForm((f) => ({
+														...f,
+														bankAccountId: e.target.value,
+													}))
+												}
+											>
+												<option value="">Sem conta</option>
+												{bancos.map((b) => (
+													<option key={b.id} value={b.id}>
+														{b.banco} — {b.conta}
+													</option>
+												))}
+											</NativeSelect.Field>
+										</NativeSelect.Root>
+									</Field.Root>
+								</HStack>
+
+								<HStack gap={3} align="flex-start" flexWrap="wrap">
+									<Field.Root flex="1" minW="140px" disabled={isReadOnly}>
+										<Field.Label>Documento</Field.Label>
+										<Input
+											value={form.documento}
+											readOnly={isReadOnly}
+											onChange={(e) =>
+												setForm((f) => ({
+													...f,
+													documento: e.target.value,
+												}))
+											}
+										/>
+									</Field.Root>
+									<Field.Root flex="1" minW="140px" disabled={isReadOnly}>
+										<Field.Label>Número</Field.Label>
+										<Input
+											value={form.numero}
+											readOnly={isReadOnly}
+											onChange={(e) =>
+												setForm((f) => ({ ...f, numero: e.target.value }))
+											}
+										/>
+									</Field.Root>
+								</HStack>
+
+								<Field.Root disabled={isReadOnly}>
+									<Field.Label>Observações</Field.Label>
+									<Textarea
+										value={form.observacoes}
+										readOnly={isReadOnly}
+										onChange={(e) =>
+											setForm((f) => ({
+												...f,
+												observacoes: e.target.value,
+											}))
+										}
+										rows={3}
+									/>
+								</Field.Root>
+
+								{isReadOnly ? (
+									<Stack gap={2}>
+										<Text fontWeight="medium">Pagamentos</Text>
+										{payments.length === 0 ? (
+											<Text fontSize="sm" color="fg.muted">
+												Nenhum pagamento registrado
+											</Text>
+										) : (
+											<Table.ScrollArea maxH="200px">
+												<Table.Root size="sm">
+													<Table.Header>
+														<Table.Row>
+															<Table.ColumnHeader>Data</Table.ColumnHeader>
+															<Table.ColumnHeader textAlign="end">
+																Valor
+															</Table.ColumnHeader>
+															<Table.ColumnHeader hideBelow="md">
+																Conta
+															</Table.ColumnHeader>
 														</Table.Row>
-													))}
-												</Table.Body>
-											</Table.Root>
-										</Table.ScrollArea>
-									)}
-								</Stack>
-							) : null}
-						</Stack>
-					</Dialog.Body>
-					<Dialog.Footer>
-						<Dialog.ActionTrigger asChild>
-							<Button variant="outline">
-								{isReadOnly ? "Fechar" : "Cancelar"}
+													</Table.Header>
+													<Table.Body>
+														{payments.map((payment) => (
+															<Table.Row key={payment.id}>
+																<Table.Cell>
+																	{formatDate(payment.dataPagamento)}
+																</Table.Cell>
+																<Table.Cell textAlign="end">
+																	{formatMoney(payment.valor)}
+																</Table.Cell>
+																<Table.Cell hideBelow="md">
+																	{bankLabel(payment.bankAccountId)}
+																</Table.Cell>
+															</Table.Row>
+														))}
+													</Table.Body>
+												</Table.Root>
+											</Table.ScrollArea>
+										)}
+									</Stack>
+								) : null}
+							</Stack>
+						</Dialog.Body>
+						<Dialog.Footer>
+							<Dialog.ActionTrigger asChild>
+								<Button variant="outline">
+									{isReadOnly ? "Fechar" : "Cancelar"}
+								</Button>
+							</Dialog.ActionTrigger>
+							{isReadOnly ? null : (
+								<Button
+									bg="helios.solid"
+									color="helios.contrast"
+									loading={saving}
+									onClick={() => void handleSave()}
+								>
+									Salvar
+								</Button>
+							)}
+						</Dialog.Footer>
+					</Dialog.Content>
+				</Dialog.Positioner>
+			</Dialog.Root>
+			<Dialog.Root
+				open={applyScopeOpen}
+				onOpenChange={(e) => setApplyScopeOpen(e.open)}
+			>
+				<Dialog.Backdrop />
+				<Dialog.Positioner>
+					<Dialog.Content bg="bg.panel" maxW="md">
+						<Dialog.Header>
+							<Dialog.Title>Aplicar alteração</Dialog.Title>
+							<Dialog.CloseTrigger />
+						</Dialog.Header>
+						<Dialog.Body>
+							<Text>
+								Esta conta faz parte de um parcelamento com outras parcelas em
+								aberto. Deseja alterar somente esta parcela ou também as demais
+								em aberto?
+							</Text>
+						</Dialog.Body>
+						<Dialog.Footer flexWrap="wrap" gap="2">
+							<Dialog.ActionTrigger asChild>
+								<Button variant="outline">Cancelar</Button>
+							</Dialog.ActionTrigger>
+							<Button
+								variant="outline"
+								loading={saving}
+								onClick={() => void saveEdit(false)}
+							>
+								Somente esta parcela
 							</Button>
-						</Dialog.ActionTrigger>
-						{isReadOnly ? null : (
 							<Button
 								bg="helios.solid"
 								color="helios.contrast"
 								loading={saving}
-								onClick={() => void handleSave()}
+								onClick={() => void saveEdit(true)}
 							>
-								Salvar
+								Demais em aberto
 							</Button>
-						)}
-					</Dialog.Footer>
-				</Dialog.Content>
-			</Dialog.Positioner>
-		</Dialog.Root>
+						</Dialog.Footer>
+					</Dialog.Content>
+				</Dialog.Positioner>
+			</Dialog.Root>
+		</>
 	);
 }

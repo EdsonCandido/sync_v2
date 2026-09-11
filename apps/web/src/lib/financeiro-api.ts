@@ -248,6 +248,7 @@ export type FinancialEntryInput = {
 	observacoes?: string | null;
 	parcelas?: number;
 	parcelamentoModo?: "dividir" | "repetir";
+	applyToOpenInstallments?: boolean;
 };
 
 function qs(params: Record<string, string | number | undefined>) {

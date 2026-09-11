@@ -985,6 +985,7 @@ export const updateFinancialEntrySchema = z.object({
 	dataEmissao: z.coerce.date().optional(),
 	dataVencimento: z.coerce.date().optional(),
 	observacoes: z.string().optional().nullable(),
+	applyToOpenInstallments: z.boolean().optional().default(false),
 });
 
 export type UpdateFinancialEntryInput = z.infer<
